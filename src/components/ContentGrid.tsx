@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ContentCard } from "./ContentCard";
 import { ContentModal } from "./ContentModal";
+import { supabase } from "@/integrations/supabase/client";
 import content1 from "@/assets/content-1.jpg";
 import content2 from "@/assets/content-2.jpg";
 import content3 from "@/assets/content-3.jpg";
@@ -9,17 +10,50 @@ import content4 from "@/assets/content-4.jpg";
 import content5 from "@/assets/content-5.jpg";
 import content6 from "@/assets/content-6.jpg";
 
-const contentItems = [
-  { id: 1, image: content1, title: "Ensaio Exclusivo #1", likes: 342, views: 1250 },
-  { id: 2, image: content2, title: "Noite de Velas", likes: 289, views: 987 },
-  { id: 3, image: content3, title: "Silhuetas", likes: 456, views: 1580 },
-  { id: 4, image: content4, title: "Mistério", likes: 378, views: 1120 },
-  { id: 5, image: content5, title: "Sedução", likes: 512, views: 1890 },
-  { id: 6, image: content6, title: "Elegância", likes: 267, views: 845 },
+interface ContentItem {
+  id: string;
+  title: string;
+  media_url: string | null;
+  likes_count: number;
+  views_count: number;
+  is_free: boolean;
+}
+
+const fallbackContents = [
+  { id: "1", title: "Ensaio Exclusivo #1", media_url: content1, likes_count: 342, views_count: 1250, is_free: false },
+  { id: "2", title: "Noite de Velas", media_url: content2, likes_count: 289, views_count: 987, is_free: false },
+  { id: "3", title: "Silhuetas", media_url: content3, likes_count: 456, views_count: 1580, is_free: false },
+  { id: "4", title: "Mistério", media_url: content4, likes_count: 378, views_count: 1120, is_free: false },
+  { id: "5", title: "Sedução", media_url: content5, likes_count: 512, views_count: 1890, is_free: false },
+  { id: "6", title: "Elegância", media_url: content6, likes_count: 267, views_count: 845, is_free: false },
 ];
 
 export function ContentGrid() {
-  const [selectedContent, setSelectedContent] = useState<typeof contentItems[0] | null>(null);
+  const [contents, setContents] = useState<ContentItem[]>(fallbackContents);
+  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
+
+  useEffect(() => {
+    fetchContents();
+  }, []);
+
+  const fetchContents = async () => {
+    const { data, error } = await supabase
+      .from("contents")
+      .select("id, title, media_url, likes_count, views_count, is_free")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+
+    if (!error && data && data.length > 0) {
+      setContents(data);
+    }
+  };
+
+  // Use fallback images for items without media_url
+  const getImageUrl = (content: ContentItem, index: number) => {
+    if (content.media_url) return content.media_url;
+    const fallbackImages = [content1, content2, content3, content4, content5, content6];
+    return fallbackImages[index % fallbackImages.length];
+  };
 
   return (
     <section id="conteudos" className="py-20">
@@ -40,14 +74,14 @@ export function ContentGrid() {
         </motion.div>
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:gap-6">
-          {contentItems.map((item, index) => (
+          {contents.map((item, index) => (
             <ContentCard
               key={item.id}
-              image={item.image}
+              image={getImageUrl(item, index)}
               title={item.title}
-              likes={item.likes}
-              views={item.views}
-              isLocked={true}
+              likes={item.likes_count}
+              views={item.views_count}
+              isLocked={!item.is_free}
               index={index}
               onClick={() => setSelectedContent(item)}
             />
@@ -58,7 +92,13 @@ export function ContentGrid() {
       <ContentModal
         isOpen={!!selectedContent}
         onClose={() => setSelectedContent(null)}
-        content={selectedContent}
+        content={selectedContent ? {
+          id: parseInt(selectedContent.id) || 0,
+          image: selectedContent.media_url || content1,
+          title: selectedContent.title,
+          likes: selectedContent.likes_count,
+          views: selectedContent.views_count,
+        } : null}
       />
     </section>
   );

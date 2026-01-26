@@ -1,22 +1,72 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Heart, Users, Image, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/hero-silhouette.jpg";
 import avatarImage from "@/assets/profile-avatar.jpg";
 
-const stats = [
-  { icon: Image, value: "127", label: "Fotos" },
-  { icon: Heart, value: "2.4K", label: "Curtidas" },
-  { icon: Users, value: "856", label: "Assinantes" },
-];
+interface ModelProfile {
+  name: string;
+  bio: string | null;
+  avatar_url: string | null;
+  hero_image_url: string | null;
+}
 
 export function HeroSection() {
+  const [profile, setProfile] = useState<ModelProfile | null>(null);
+  const [stats, setStats] = useState({
+    photos: 0,
+    likes: 0,
+    subscribers: 856,
+  });
+
+  useEffect(() => {
+    fetchProfile();
+    fetchStats();
+  }, []);
+
+  const fetchProfile = async () => {
+    const { data } = await supabase
+      .from("model_profile")
+      .select("name, bio, avatar_url, hero_image_url")
+      .limit(1)
+      .maybeSingle();
+
+    if (data) setProfile(data);
+  };
+
+  const fetchStats = async () => {
+    const { data: contents } = await supabase
+      .from("contents")
+      .select("likes_count")
+      .eq("is_active", true);
+
+    if (contents) {
+      setStats({
+        photos: contents.length,
+        likes: contents.reduce((acc, c) => acc + (c.likes_count || 0), 0),
+        subscribers: 856,
+      });
+    }
+  };
+
+  const displayName = profile?.name || "Amanda Oliveira";
+  const [firstName, ...lastNameParts] = displayName.split(" ");
+  const lastName = lastNameParts.join(" ");
+
+  const statsData = [
+    { icon: Image, value: stats.photos.toString(), label: "Fotos" },
+    { icon: Heart, value: stats.likes > 1000 ? `${(stats.likes / 1000).toFixed(1)}K` : stats.likes.toString(), label: "Curtidas" },
+    { icon: Users, value: stats.subscribers.toString(), label: "Assinantes" },
+  ];
+
   return (
     <section className="relative min-h-screen overflow-hidden">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <img
-          src={heroImage}
+          src={profile?.hero_image_url || heroImage}
           alt="Hero background"
           className="h-full w-full object-cover object-center"
         />
@@ -40,7 +90,7 @@ export function HeroSection() {
           >
             <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-primary shadow-glow md:h-40 md:w-40">
               <img
-                src={avatarImage}
+                src={profile?.avatar_url || avatarImage}
                 alt="Profile"
                 className="h-full w-full object-cover"
               />
@@ -58,7 +108,7 @@ export function HeroSection() {
             transition={{ delay: 0.3, duration: 0.5 }}
             className="mb-2 text-4xl font-bold md:text-5xl lg:text-6xl"
           >
-            <span className="text-gradient">Amanda</span> Oliveira
+            <span className="text-gradient">{firstName}</span> {lastName}
           </motion.h1>
           
           <motion.p
@@ -67,8 +117,7 @@ export function HeroSection() {
             transition={{ delay: 0.4, duration: 0.5 }}
             className="mb-8 max-w-md text-lg text-muted-foreground"
           >
-            Conteúdo exclusivo e sensual para assinantes VIP. 
-            Descubra um mundo de sedução e elegância.
+            {profile?.bio || "Conteúdo exclusivo e sensual para assinantes VIP. Descubra um mundo de sedução e elegância."}
           </motion.p>
 
           {/* Stats */}
@@ -78,7 +127,7 @@ export function HeroSection() {
             transition={{ delay: 0.5, duration: 0.5 }}
             className="mb-8 flex gap-8"
           >
-            {stats.map((stat) => (
+            {statsData.map((stat) => (
               <div key={stat.label} className="flex flex-col items-center">
                 <stat.icon className="mb-1 h-5 w-5 text-primary" />
                 <span className="text-2xl font-bold">{stat.value}</span>
