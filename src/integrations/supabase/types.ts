@@ -14,16 +14,162 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_users: {
+        Row: {
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contents: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_free: boolean | null
+          likes_count: number | null
+          media_url: string | null
+          sort_order: number | null
+          thumbnail_url: string | null
+          title: string
+          type: Database["public"]["Enums"]["content_type"]
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_free?: boolean | null
+          likes_count?: number | null
+          media_url?: string | null
+          sort_order?: number | null
+          thumbnail_url?: string | null
+          title: string
+          type?: Database["public"]["Enums"]["content_type"]
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_free?: boolean | null
+          likes_count?: number | null
+          media_url?: string | null
+          sort_order?: number | null
+          thumbnail_url?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["content_type"]
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: []
+      }
+      model_profile: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          hero_image_url: string | null
+          id: string
+          instagram: string | null
+          name: string
+          twitter: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          hero_image_url?: string | null
+          id?: string
+          instagram?: string | null
+          name?: string
+          twitter?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          hero_image_url?: string | null
+          id?: string
+          instagram?: string | null
+          name?: string
+          twitter?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      pricing_plans: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          features: string[] | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          is_popular: boolean | null
+          name: string
+          period: string
+          price: number
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          features?: string[] | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_popular?: boolean | null
+          name: string
+          period?: string
+          price: number
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          features?: string[] | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_popular?: boolean | null
+          name?: string
+          period?: string
+          price?: number
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      content_type: "photo" | "video"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +296,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      content_type: ["photo", "video"],
+    },
   },
 } as const
