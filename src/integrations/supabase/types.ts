@@ -251,6 +251,7 @@ export type Database = {
           avatar_url: string | null
           blocked: boolean
           created_at: string
+          email: string | null
           full_name: string | null
           id: string
           updated_at: string
@@ -259,6 +260,7 @@ export type Database = {
           avatar_url?: string | null
           blocked?: boolean
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id: string
           updated_at?: string
@@ -267,6 +269,7 @@ export type Database = {
           avatar_url?: string | null
           blocked?: boolean
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id?: string
           updated_at?: string
@@ -314,7 +317,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
-      content_type: "photo" | "video"
+      content_type: "photo" | "video" | "audio" | "text" | "file"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -443,7 +446,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
-      content_type: ["photo", "video"],
+      content_type: ["photo", "video", "audio", "text", "file"],
     },
   },
 } as const
