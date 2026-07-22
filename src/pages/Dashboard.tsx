@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { Link } from "react-router-dom";
 import { Lock, PlayCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getMediaUrls } from "@/lib/media";
 
 type Module = {
   id: string;
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const { user, isAdmin, profile } = useAuth();
   const [modules, setModules] = useState<Module[]>([]);
   const [accessSet, setAccessSet] = useState<Set<string>>(new Set());
+  const [coverUrls, setCoverUrls] = useState<Map<string, string | null>>(new Map());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,13 +31,15 @@ export default function Dashboard() {
         supabase.from("modules").select("*").eq("active", true).order("order_index"),
         supabase.from("module_access").select("module_id").eq("user_id", user.id),
       ]);
-      setModules((mods as Module[]) ?? []);
+      const visibleModules = ((mods as Module[]) ?? []);
+      setModules(visibleModules);
       setAccessSet(new Set((access ?? []).map((a) => a.module_id)));
+      setCoverUrls(await getMediaUrls(visibleModules, (module) => module.cover_url));
       setLoading(false);
     })();
   }, [user]);
 
-  const hasAccess = (m: Module) => isAdmin || (!m.locked && accessSet.has(m.id));
+  const hasAccess = (m: Module) => isAdmin || !m.locked || accessSet.has(m.id);
 
   return (
     <AppLayout>
@@ -79,8 +83,8 @@ export default function Dashboard() {
                   className={`card-border rounded-xl overflow-hidden group ${!unlocked ? "opacity-70 cursor-not-allowed" : ""}`}
                 >
                   <div className="aspect-video bg-secondary relative overflow-hidden">
-                    {m.cover_url ? (
-                      <img src={m.cover_url} alt={m.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    {coverUrls.get(m.id) ? (
+                      <img src={coverUrls.get(m.id) ?? ""} alt={m.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                       <div className="w-full h-full gradient-primary opacity-30" />
                     )}

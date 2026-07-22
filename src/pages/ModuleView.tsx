@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { ArrowLeft, FileText, Image as ImageIcon, Music, Video } from "lucide-react";
 import { toast } from "sonner";
+import { getMediaUrl } from "@/lib/media";
 
 type ContentType = "video" | "audio" | "photo" | "text" | "file";
 type Content = {
@@ -32,28 +33,36 @@ export default function ModuleView() {
   const [mod, setMod] = useState<Module | null>(null);
   const [contents, setContents] = useState<Content[]>([]);
   const [active, setActive] = useState<Content | null>(null);
+  const [activeMediaUrl, setActiveMediaUrl] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       if (!user || !id) return;
-      if (!isAdmin) {
-        const { data: acc } = await supabase.from("module_access").select("module_id").eq("user_id", user.id).eq("module_id", id).maybeSingle();
-        if (!acc) {
-          toast.error("Você não tem acesso a este módulo.");
-          nav("/app");
-          return;
-        }
-      }
       const [{ data: m }, { data: c }] = await Promise.all([
         supabase.from("modules").select("id,title,description").eq("id", id).maybeSingle(),
         supabase.from("module_contents").select("id,title,body,type,media_url,external_url,order_index").eq("module_id", id).order("order_index"),
       ]);
+      if (!m) {
+        toast.error(isAdmin ? "Módulo não encontrado." : "Você não tem acesso a este módulo.");
+        nav("/app");
+        return;
+      }
       setMod(m as Module);
       const list = (c ?? []) as Content[];
       setContents(list);
       if (list.length) setActive(list[0]);
     })();
   }, [id, user, isAdmin, nav]);
+
+  useEffect(() => {
+    let alive = true;
+    setActiveMediaUrl(null);
+    if (!active?.media_url) return;
+    getMediaUrl(active.media_url).then((url) => {
+      if (alive) setActiveMediaUrl(url);
+    });
+    return () => { alive = false; };
+  }, [active]);
 
   return (
     <AppLayout>
@@ -76,22 +85,22 @@ export default function ModuleView() {
               <p className="text-xs uppercase tracking-widest text-primary">{labelOf(active.type)}</p>
               <h2 className="text-xl font-semibold mt-1">{active.title}</h2>
               <div className="mt-5">
-                {active.type === "video" && active.media_url && (
-                  <video src={active.media_url} controls className="w-full rounded-lg bg-black" controlsList="nodownload" />
+                {active.type === "video" && (activeMediaUrl || active.external_url) && (
+                  <video src={activeMediaUrl ?? active.external_url!} controls className="w-full rounded-lg bg-background" controlsList="nodownload" />
                 )}
-                {active.type === "audio" && active.media_url && (
-                  <audio src={active.media_url} controls className="w-full" controlsList="nodownload" />
+                {active.type === "audio" && (activeMediaUrl || active.external_url) && (
+                  <audio src={activeMediaUrl ?? active.external_url!} controls className="w-full" controlsList="nodownload" />
                 )}
-                {active.type === "photo" && active.media_url && (
-                  <img src={active.media_url} alt={active.title ?? ""} className="w-full rounded-lg" />
+                {active.type === "photo" && (activeMediaUrl || active.external_url) && (
+                  <img src={activeMediaUrl ?? active.external_url!} alt={active.title ?? ""} className="w-full rounded-lg" />
                 )}
                 {active.type === "text" && (
                   <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
                     {active.body}
                   </div>
                 )}
-                {active.type === "file" && (active.media_url || active.external_url) && (
-                  <a href={active.media_url ?? active.external_url!} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-md gradient-primary btn-glow text-sm">
+                {active.type === "file" && (activeMediaUrl || active.external_url) && (
+                  <a href={activeMediaUrl ?? active.external_url!} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-md gradient-primary btn-glow text-sm">
                     <FileText className="h-4 w-4" /> Abrir arquivo
                   </a>
                 )}
