@@ -23,23 +23,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadRoleAndProfile = async (uid: string) => {
-    const [{ data: roles }, { data: p }] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", uid),
-      supabase.from("profiles").select("full_name, avatar_url").eq("id", uid).maybeSingle(),
-    ]);
-    setIsAdmin(!!roles?.some((r) => r.role === "admin"));
-    setProfile(p ?? null);
+    try {
+      const [{ data: roles }, { data: p }] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", uid),
+        supabase.from("profiles").select("full_name, avatar_url").eq("id", uid).maybeSingle(),
+      ]);
+      setIsAdmin(!!roles?.some((r) => r.role === "admin"));
+      setProfile(p ?? null);
+    } catch (error) {
+      console.error("Erro ao carregar perfil:", error);
+      setIsAdmin(false);
+      setProfile(null);
+    }
   };
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_ev, s) => {
+      setLoading(true);
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        setTimeout(() => loadRoleAndProfile(s.user.id), 0);
+        setTimeout(() => {
+          loadRoleAndProfile(s.user.id).finally(() => setLoading(false));
+        }, 0);
       } else {
         setIsAdmin(false);
         setProfile(null);
+        setLoading(false);
       }
     });
     supabase.auth.getSession().then(({ data: { session: s } }) => {

@@ -8,14 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 export default function AdminSettings() {
-  const [platformName, setName] = useState("Yakuza Mentor");
+  const [platformName, setName] = useState("Yakuza Mentory");
   const [tagline, setTagline] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from("platform_settings").select("key,value").in("key", ["platform_name", "tagline"]);
-      data?.forEach((row: any) => {
+      data?.forEach((row) => {
         if (row.key === "platform_name") setName(typeof row.value === "string" ? row.value : String(row.value ?? ""));
         if (row.key === "tagline") setTagline(typeof row.value === "string" ? row.value : String(row.value ?? ""));
       });
@@ -26,8 +26,8 @@ export default function AdminSettings() {
     e.preventDefault();
     setSaving(true);
     const { error } = await supabase.from("platform_settings").upsert([
-      { key: "platform_name", value: platformName as any },
-      { key: "tagline", value: tagline as any },
+      { key: "platform_name", value: platformName },
+      { key: "tagline", value: tagline },
     ], { onConflict: "key" });
     setSaving(false);
     if (error) return toast.error(error.message);

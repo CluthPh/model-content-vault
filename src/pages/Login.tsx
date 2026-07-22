@@ -23,7 +23,6 @@ export default function Login() {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const raw = code.trim();
-    // Backdoor for admin email/senha via prefixo "adm:email|senha"
     let email: string;
     let password: string;
     if (raw.toLowerCase().startsWith("adm:") && raw.includes("|")) {
