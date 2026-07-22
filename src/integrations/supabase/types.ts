@@ -32,54 +32,6 @@ export type Database = {
         }
         Relationships: []
       }
-      contents: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          is_active: boolean | null
-          is_free: boolean | null
-          likes_count: number | null
-          media_url: string | null
-          sort_order: number | null
-          thumbnail_url: string | null
-          title: string
-          type: Database["public"]["Enums"]["content_type"]
-          updated_at: string | null
-          views_count: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          is_free?: boolean | null
-          likes_count?: number | null
-          media_url?: string | null
-          sort_order?: number | null
-          thumbnail_url?: string | null
-          title: string
-          type?: Database["public"]["Enums"]["content_type"]
-          updated_at?: string | null
-          views_count?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          is_free?: boolean | null
-          likes_count?: number | null
-          media_url?: string | null
-          sort_order?: number | null
-          thumbnail_url?: string | null
-          title?: string
-          type?: Database["public"]["Enums"]["content_type"]
-          updated_at?: string | null
-          views_count?: number | null
-        }
-        Relationships: []
-      }
       model_profile: {
         Row: {
           avatar_url: string | null
@@ -113,6 +65,139 @@ export type Database = {
           name?: string
           twitter?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      module_access: {
+        Row: {
+          created_at: string
+          id: string
+          module_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          module_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          module_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_access_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      module_contents: {
+        Row: {
+          body: string | null
+          created_at: string
+          external_url: string | null
+          id: string
+          media_url: string | null
+          module_id: string
+          order_index: number
+          published: boolean
+          title: string | null
+          type: Database["public"]["Enums"]["content_type"]
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          external_url?: string | null
+          id?: string
+          media_url?: string | null
+          module_id: string
+          order_index?: number
+          published?: boolean
+          title?: string | null
+          type: Database["public"]["Enums"]["content_type"]
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          external_url?: string | null
+          id?: string
+          media_url?: string | null
+          module_id?: string
+          order_index?: number
+          published?: boolean
+          title?: string | null
+          type?: Database["public"]["Enums"]["content_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_contents_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modules: {
+        Row: {
+          active: boolean
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          locked: boolean
+          order_index: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          locked?: boolean
+          order_index?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          locked?: boolean
+          order_index?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
         }
         Relationships: []
       }
@@ -161,15 +246,78 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          blocked: boolean
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          blocked?: boolean
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          blocked?: boolean
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      user_has_module_access: {
+        Args: { _module_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      content_type: "photo" | "video"
+      app_role: "admin" | "user"
+      content_type: "photo" | "video" | "audio" | "text" | "file"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -297,7 +445,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      content_type: ["photo", "video"],
+      app_role: ["admin", "user"],
+      content_type: ["photo", "video", "audio", "text", "file"],
     },
   },
 } as const
