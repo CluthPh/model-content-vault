@@ -88,10 +88,10 @@ export default function Dashboard() {
                     ) : (
                       <div className="w-full h-full gradient-primary opacity-30" />
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/25 to-transparent" />
                     <div className="absolute top-3 right-3">
                       {!unlocked ? (
-                        <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-black/60 backdrop-blur border border-border">
+                        <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-background/80 backdrop-blur border border-border">
                           <Lock className="h-3 w-3" /> Bloqueado
                         </span>
                       ) : (

@@ -21,7 +21,7 @@ export default function AgeGate() {
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="max-w-lg w-full card-border rounded-2xl p-8 md:p-10 text-center animate-fade-in">
         <div className="mx-auto mb-6 h-14 w-14 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
-          <Shield className="h-7 w-7 text-white" />
+          <Shield className="h-7 w-7 text-primary-foreground" />
         </div>
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
           YAKUZA <span className="text-primary">MENTORY</span>

@@ -63,8 +63,7 @@ export default function AdminModuleContents() {
     const path = `modules/${id}/${Date.now()}-${file.name.replace(/[^a-z0-9.\-]/gi, "_")}`;
     const { error } = await supabase.storage.from("mentor-media").upload(path, file);
     if (error) { setUploading(false); return toast.error(error.message); }
-    const { data } = await supabase.storage.from("mentor-media").createSignedUrl(path, 60 * 60 * 24 * 365);
-    setForm((f) => ({ ...f, media_url: data?.signedUrl ?? "" }));
+    setForm((f) => ({ ...f, media_url: path }));
     setUploading(false);
   };
 

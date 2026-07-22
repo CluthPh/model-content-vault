@@ -1,16 +1,18 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const CODE_DOMAIN = "yakuza.local";
 
 function normalizeCode(raw: string) {
   return raw.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 }
+
+type RoleRow = { role: string };
+type RequestBody = {
+  full_name?: unknown;
+  access_code?: unknown;
+  is_admin?: unknown;
+};
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -36,12 +38,12 @@ Deno.serve(async (req) => {
 
     const admin = createClient(url, service);
     const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", user.id);
-    const isAdmin = roles?.some((r: any) => r.role === "admin");
+    const isAdmin = (roles as RoleRow[] | null)?.some((row) => row.role === "admin");
     if (!isAdmin) return json({ error: "acesso negado" }, 403);
 
-    let body: any = {};
+    let body: RequestBody = {};
     try {
-      body = await req.json();
+      body = await req.json() as RequestBody;
     } catch {
       return json({ error: "corpo da requisição inválido" }, 400);
     }

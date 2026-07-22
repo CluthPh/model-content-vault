@@ -11,6 +11,9 @@ import { Plus, ShieldCheck, User as UserIcon, Copy, RefreshCw } from "lucide-rea
 
 type ProfileRow = { id: string; access_code: string | null; full_name: string | null };
 type ModuleRow = { id: string; title: string };
+type RoleRow = { user_id: string; role: string };
+type AccessRow = { user_id: string; module_id: string };
+type CreateUserResponse = { ok?: boolean; error?: string; id?: string; access_code?: string };
 
 const normalize = (raw: string) => raw.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 const genCode = () => {
@@ -32,16 +35,16 @@ export default function AdminUsers() {
 
   const load = async () => {
     const [{ data: p }, { data: m }, { data: r }, { data: a }] = await Promise.all([
-      (supabase.from("profiles") as any).select("id,access_code,full_name").order("created_at", { ascending: false }),
+      supabase.from("profiles").select("id,access_code,full_name").order("created_at", { ascending: false }),
       supabase.from("modules").select("id,title").order("order_index"),
       supabase.from("user_roles").select("user_id,role"),
       supabase.from("module_access").select("user_id,module_id"),
     ]);
     setUsers((p as ProfileRow[]) ?? []);
     setModules((m as ModuleRow[]) ?? []);
-    setAdmins(new Set((r ?? []).filter((x: any) => x.role === "admin").map((x: any) => x.user_id)));
+    setAdmins(new Set(((r as RoleRow[] | null) ?? []).filter((row) => row.role === "admin").map((row) => row.user_id)));
     const map: Record<string, Set<string>> = {};
-    (a ?? []).forEach((row: any) => {
+    ((a as AccessRow[] | null) ?? []).forEach((row) => {
       map[row.user_id] = map[row.user_id] ?? new Set();
       map[row.user_id].add(row.module_id);
     });
@@ -66,8 +69,9 @@ export default function AdminUsers() {
       body: { full_name: form.full_name, access_code: code, is_admin: form.is_admin },
     });
     setSaving(false);
-    if (error || (data as any)?.error) {
-      toast.error("Erro ao criar", { description: error?.message ?? (data as any)?.error });
+    const response = data as CreateUserResponse | null;
+    if (error || response?.error) {
+      toast.error("Erro ao criar", { description: error?.message ?? response?.error });
       return;
     }
     toast.success("Aluno cadastrado", { description: `Código: ${code.toUpperCase()}` });
