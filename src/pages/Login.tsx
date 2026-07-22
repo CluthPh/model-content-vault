@@ -36,7 +36,7 @@ export default function Login() {
         <div className="text-center mb-8">
           <div className="mx-auto mb-4 h-12 w-12 rounded-xl gradient-primary shadow-glow" />
           <h1 className="text-2xl font-bold">
-            YAKUZA <span className="text-primary">MENTOR</span>
+            YAKUZA <span className="text-primary">MENTORY</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Acesso exclusivo para alunos</p>
         </div>

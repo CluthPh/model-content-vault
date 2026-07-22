@@ -31,7 +31,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <Link to="/app" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-md gradient-primary shadow-glow" />
             <span className="font-bold tracking-wider text-lg">
-              YAKUZA <span className="text-primary">MENTOR</span>
+              YAKUZA <span className="text-primary">MENTORY</span>
             </span>
           </Link>
           <nav className="hidden md:flex items-center gap-1">
@@ -93,7 +93,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <Link to="/privacidade" className="hover:text-foreground">Política de privacidade</Link>
           <Link to="/aviso-adulto" className="hover:text-foreground">Aviso adulto</Link>
         </div>
-        <p className="mt-2">© {new Date().getFullYear()} Yakuza Mentor — Conteúdo +18</p>
+        <p className="mt-2">© {new Date().getFullYear()} Yakuza Mentory — Conteúdo +18</p>
       </footer>
     </div>
   );
