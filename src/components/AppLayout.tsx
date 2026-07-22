@@ -60,10 +60,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </nav>
           <div className="hidden md:flex items-center gap-3">
             <span className="text-sm text-muted-foreground">{profile?.full_name}</span>
+            <ThemeToggle />
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut className="h-4 w-4 mr-1" /> Sair
             </Button>
           </div>
+
           <button
             className="md:hidden p-2 rounded-md hover:bg-secondary"
             onClick={() => setOpen((v) => !v)}
