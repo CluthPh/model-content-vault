@@ -1,88 +1,105 @@
-# Yakuza Mentor — Plataforma Privada de Mentoria
+# Refatoração e Otimização — Yakuza Mentory
 
-Área de mentoria privada com login, módulos e painel administrativo. Sem pagamentos, gamificação, comunidade ou progresso.
+Plano completo dividido em 6 etapas independentes. Cada etapa é entregável isoladamente e pode ser aprovada/executada em ordem.
 
-## Identidade Visual
+---
 
-Tema dark premium, sensual e misterioso, com paleta:
-- Fundo `#0A0A0A`, carbono `#121212`, cards `#1A1A1A`
-- Vermelho principal `#C00020`, escuro `#710014`
-- Texto branco `#FFFFFF` e cinza `#A7A7A7`, bordas `#2A2A2A`
-- Efeitos de brilho vermelho suave nos botões, sombras discretas, cantos levemente arredondados
+## Etapa 1 — Fundação de dados e cache
 
-Tipografia moderna e limpa (Inter/Poppins). Sem imagens explícitas na interface.
+Objetivo: eliminar chamadas duplicadas ao Supabase e centralizar acesso a dados.
 
-## Estrutura do Projeto
+- Introduzir React Query (`@tanstack/react-query` já instalado) como camada única de fetch.
+- Criar `src/hooks/queries/` com hooks tipados:
+  - `useModules`, `useModule(id)`, `useModuleContents(id)`
+  - `useUsers`, `useUserAccess`, `useRoles`
+  - `usePlatformSettings`
+- Substituir todos os `useEffect + supabase.from(...)` das páginas por esses hooks.
+- Invalidations centralizadas após mutações (criar/editar/excluir).
+- Resultado: menos flicker, menos requisições, código de página ~40% menor.
 
-Rotas públicas:
-- `/` — Confirmação de maioridade (uma única vez, salva localmente)
-- `/login` — Login (sem cadastro público)
-- `/recuperar-senha` — Recuperar senha
-- `/termos`, `/privacidade`, `/aviso-adulto` — Páginas legais
-- `*` — 404
+## Etapa 2 — Camada de mídia unificada
 
-Rotas privadas (usuário):
-- `/app` — Página inicial com cards de módulos liberados
-- `/app/modulos/:id` — Página do módulo com conteúdos
-- `/app/perfil` — Perfil básico
+Objetivo: URLs assinadas confiáveis e reaproveitadas.
 
-Rotas privadas (admin):
-- `/admin` — Dashboard
-- `/admin/modulos` — CRUD de módulos + reordenar
-- `/admin/modulos/:id/conteudos` — CRUD de conteúdos do módulo
-- `/admin/usuarios` — CRUD de usuários e permissões
-- `/admin/configuracoes` — Configurações gerais
+- Expandir `src/lib/media.ts` com:
+  - Cache em memória de URLs assinadas (TTL 50 min).
+  - `useSignedUrl(path)` hook com Suspense-friendly loading.
+  - Helpers `resolveModuleCover`, `resolveContentMedia` únicos.
+- Remover lógica duplicada em `Dashboard`, `ModuleView`, `AdminModules`, `AdminModuleContents`.
+- Fallbacks e estados de erro padronizados.
 
-## Banco de Dados (Lovable Cloud)
+## Etapa 3 — Componentização e design system
 
-Tabelas:
-- `profiles` — id (auth.users), nome, avatar_url, bloqueado
-- `user_roles` — user_id, role (`admin` | `user`) — tabela separada por segurança
-- `modules` — título, descrição, capa_url, ordem, ativo, bloqueado
-- `module_contents` — module_id, tipo (`text`|`image`|`gallery`|`video`|`video_link`|`audio`|`pdf`|`file`|`link`|`button`), título, corpo, media_url, url_externo, ordem, publicado
-- `module_access` — module_id, user_id (permissões por usuário)
-- `platform_settings` — chave/valor (nome da plataforma, textos legais)
+Objetivo: reduzir duplicação visual.
 
-Storage bucket `mentor-media` para uploads (imagens, vídeos, áudios, PDFs).
+- Extrair componentes reutilizáveis:
+  - `PageHeader` (título + subtítulo + ações) usado em todas as páginas admin.
+  - `EmptyState`, `LoadingState`, `ErrorState`.
+  - `MediaThumb`, `ModuleCard`, `ContentBlock` (renderiza cada `content_type`).
+  - `UserRow` para `AdminUsers`.
+- Consolidar tokens: revisar `index.css` para remover cores/sombras não usadas e nomear semanticamente (`--surface-1`, `--surface-2`, `--accent`, `--accent-strong`).
+- Garantir 100% dos componentes lendo tokens (nenhum `#hex` ou `text-white` hardcoded).
 
-RLS:
-- Usuário vê módulos ativos aos quais tem `module_access`
-- Usuário vê conteúdos publicados dos módulos que tem acesso
-- Admin (via `has_role`) gerencia tudo
-- Função `has_role(user_id, role)` SECURITY DEFINER para evitar recursão
+## Etapa 4 — Autenticação e roteamento
 
-## Player e Uploads
+Objetivo: fluxo previsível e sem “travas” de loading.
 
-- Player de vídeo/áudio nativos HTML5 com controles padrão (play, volume, seek, fullscreen, velocidade)
-- Vídeos incorporados: suporte a YouTube/Vimeo via iframe
-- Upload com barra de progresso, preview e mensagens de erro/sucesso
+- Refatorar `src/lib/auth.tsx`:
+  - Separar `session`, `profile`, `role` em slices; loading independente por slice.
+  - `onAuthStateChange` sem `setTimeout`; usar deferred query via React Query.
+- Criar `<RequireAuth>` e `<RequireAdmin>` em vez do `Protected` inline em `App.tsx`.
+- Layout de rotas com `Outlet` (`/app/*` e `/admin/*` como layouts pais) para carregar `AppLayout` uma vez.
+- Rota `/` redireciona direto para `/login` ou `/app` conforme sessão + age-gate.
 
-## Painel Administrativo
+## Etapa 5 — Formulários, validação e feedback
 
-- Módulos: criar, editar, excluir, duplicar, reordenar (drag & drop), publicar/ocultar, definir usuários com acesso
-- Conteúdos: criar todos os tipos, reordenar, preview, publicar/ocultar
-- Usuários: criar com senha temporária (via Edge Function admin), editar, bloquear, excluir, reset de senha, liberar módulos
+Objetivo: robustez em admin.
 
-## Dados de Demonstração
+- Adotar `react-hook-form` + `zod` (já no projeto) em:
+  - `AdminUsers` (criar aluno)
+  - `AdminModules` (CRUD módulo)
+  - `AdminModuleContents` (CRUD conteúdo, validação por `content_type`)
+  - `AdminSettings`
+- Schemas em `src/lib/schemas/` compartilhados com a Edge Function quando possível.
+- Toasts padronizados via wrapper `notify.success/error`.
+- Botões de submit com estado `pending` e desabilitados durante requisição.
 
-- 1 admin (`admin@yakuza.com`) + 2 usuários fictícios
-- 4 módulos com capas placeholder e 2 conteúdos neutros cada (texto + link/imagem)
+## Etapa 6 — Performance, segurança e qualidade
 
-## Implementação Técnica
+Objetivo: preparar para produção.
 
-- Design tokens em `index.css` (HSL) + variants no `tailwind.config.ts` — nada hardcoded
-- shadcn/ui customizado com variante `premium` (vermelho intenso com glow)
-- React Router com `ProtectedRoute` e `AdminRoute`
-- Zustand ou context para sessão/auth
-- Edge Function `admin-create-user` (service role) para criação de usuários pelo admin
-- Zod para validação de formulários
-- `@dnd-kit` para reordenação de módulos e conteúdos
+- Code-splitting por rota com `React.lazy` + `Suspense` (admin isolado do bundle público).
+- Imagens: `loading="lazy"`, dimensões explícitas, `content-visibility: auto` em grades longas.
+- Reduzir `MoneyBackground`: respeitar `prefers-reduced-motion`, pausar quando aba oculta, reduzir para ~8 notas em mobile.
+- Rodar `supabase--linter` e corrigir avisos (search_path, policies redundantes, grants faltando).
+- Revisar Edge Function `admin-create-user`: rate-limit simples, logs estruturados, validação Zod.
+- ESLint estrito: proibir `any`, `console.log` em produção, imports não usados.
+- Configurar testes mínimos com Vitest para `has_role`, `media.ts`, e guards de rota.
 
-## Fora de Escopo (não será implementado)
+---
 
-Pagamentos, comunidade, comentários, ranking, progresso, aulas ao vivo, certificados, jornada, gamificação, notificações, relatórios.
+## Diagrama do fluxo alvo
 
-## Perguntas antes de começar
+```text
+       ┌────────────┐
+UI ──▶ │ React Query│──▶ supabase-js ──▶ Supabase
+       └────────────┘
+             │
+             ▼
+       Cache + Invalidations
+             │
+             ▼
+       Media Layer (signed URLs, TTL)
+```
 
-1. Você quer que eu use o email `admin@yakuza.com` com senha temporária `Yakuza@2025` para o admin de demonstração? Você troca no primeiro login.
-2. Confirmo apagar todo o site atual (Amanda/Privacy) e substituir pelo Yakuza Mentor?
+## Detalhes técnicos
+
+- Sem mudanças de schema no banco; apenas ajustes de policies/grants se o linter apontar.
+- Nenhuma alteração de funcionalidade visível ao usuário final; apenas melhor UX (loading, erros, velocidade).
+- Cada etapa é um PR mental independente — se você aprovar só as etapas 1–3, o app segue funcionando.
+
+## Ordem recomendada de execução
+
+1 → 2 → 4 → 3 → 5 → 6. As etapas 1, 2 e 4 destravam ganhos maiores; 3 e 5 melhoram DX; 6 é polimento final.
+
+Aprove para eu começar pela **Etapa 1**, ou me diga se prefere outra ordem / recortar o escopo.
