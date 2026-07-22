@@ -41,7 +41,7 @@ export default function MoneyBackground() {
   const mobile = useIsMobile();
   const visible = useDocumentVisible();
 
-  const count = reduced ? 0 : mobile ? 8 : 18;
+  const count = reduced ? 0 : mobile ? 5 : 10;
 
   const notes = useMemo(
     () =>
@@ -49,7 +49,7 @@ export default function MoneyBackground() {
         left: Math.random() * 100,
         delay: Math.random() * 12,
         duration: 10 + Math.random() * 12,
-        size: 28 + Math.random() * 28,
+        size: 16 + Math.random() * 14,
         rotate: -30 + Math.random() * 60,
         drift: -40 + Math.random() * 80,
       })),
