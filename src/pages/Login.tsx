@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { Loader2, KeyRound } from "lucide-react";
+import MoneyBackground from "@/components/MoneyBackground";
 
 const CODE_DOMAIN = "yakuza.local";
 const normalize = (raw: string) => raw.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
