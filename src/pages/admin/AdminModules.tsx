@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { ArrowUp, ArrowDown, Pencil, Plus, Trash2, ListPlus } from "lucide-react";
+import { getMediaUrls } from "@/lib/media";
 
 type Module = {
   id: string;
@@ -26,11 +27,14 @@ export default function AdminModules() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Module | null>(null);
   const [form, setForm] = useState({ title: "", description: "", cover_url: "", active: true });
+  const [coverUrls, setCoverUrls] = useState<Map<string, string | null>>(new Map());
   const [uploading, setUploading] = useState(false);
 
   const load = async () => {
     const { data } = await supabase.from("modules").select("*").order("order_index");
-    setMods((data as Module[]) ?? []);
+    const modules = (data as Module[]) ?? [];
+    setMods(modules);
+    setCoverUrls(await getMediaUrls(modules, (module) => module.cover_url));
   };
   useEffect(() => { load(); }, []);
 
@@ -47,11 +51,10 @@ export default function AdminModules() {
 
   const uploadCover = async (file: File) => {
     setUploading(true);
-    const path = `covers/${Date.now()}-${file.name.replace(/[^a-z0-9.\-]/gi, "_")}`;
+    const path = `covers/${Date.now()}-${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
     const { error } = await supabase.storage.from("mentor-media").upload(path, file);
     if (error) { setUploading(false); return toast.error(error.message); }
-    const { data } = await supabase.storage.from("mentor-media").createSignedUrl(path, 60 * 60 * 24 * 365);
-    setForm((f) => ({ ...f, cover_url: data?.signedUrl ?? "" }));
+    setForm((f) => ({ ...f, cover_url: path }));
     setUploading(false);
   };
 
@@ -112,7 +115,7 @@ export default function AdminModules() {
                 <Label>Imagem de capa</Label>
                 <Input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadCover(e.target.files[0])} />
                 {uploading && <p className="text-xs text-muted-foreground mt-1">Enviando...</p>}
-                {form.cover_url && <img src={form.cover_url} alt="" className="mt-2 h-24 rounded" />}
+                {form.cover_url && <p className="text-xs text-muted-foreground mt-1 truncate">Imagem carregada</p>}
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="pub">Publicado</Label>
@@ -128,7 +131,7 @@ export default function AdminModules() {
         {mods.map((m, i) => (
           <div key={m.id} className="card-border rounded-xl p-4 flex items-center gap-4">
             <div className="w-20 h-14 rounded bg-secondary overflow-hidden flex-shrink-0">
-              {m.cover_url && <img src={m.cover_url} alt="" className="w-full h-full object-cover" />}
+              {coverUrls.get(m.id) && <img src={coverUrls.get(m.id) ?? ""} alt="" className="w-full h-full object-cover" />}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
