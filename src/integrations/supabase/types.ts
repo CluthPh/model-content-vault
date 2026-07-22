@@ -248,6 +248,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          access_code: string | null
           avatar_url: string | null
           blocked: boolean
           created_at: string
@@ -257,6 +258,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_code?: string | null
           avatar_url?: string | null
           blocked?: boolean
           created_at?: string
@@ -266,6 +268,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_code?: string | null
           avatar_url?: string | null
           blocked?: boolean
           created_at?: string
