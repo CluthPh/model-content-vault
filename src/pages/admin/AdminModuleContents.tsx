@@ -60,7 +60,7 @@ export default function AdminModuleContents() {
 
   const upload = async (file: File) => {
     setUploading(true);
-    const path = `modules/${id}/${Date.now()}-${file.name.replace(/[^a-z0-9.\-]/gi, "_")}`;
+    const path = `modules/${id}/${Date.now()}-${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
     const { error } = await supabase.storage.from("mentor-media").upload(path, file);
     if (error) { setUploading(false); return toast.error(error.message); }
     setForm((f) => ({ ...f, media_url: path }));
