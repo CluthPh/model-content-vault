@@ -41,7 +41,7 @@ export default function MoneyBackground() {
   const mobile = useIsMobile();
   const visible = useDocumentVisible();
 
-  const count = reduced ? 0 : mobile ? 8 : 18;
+  const count = reduced ? 0 : mobile ? 5 : 10;
 
   const notes = useMemo(
     () =>
@@ -49,7 +49,7 @@ export default function MoneyBackground() {
         left: Math.random() * 100,
         delay: Math.random() * 12,
         duration: 10 + Math.random() * 12,
-        size: 28 + Math.random() * 28,
+        size: 16 + Math.random() * 14,
         rotate: -30 + Math.random() * 60,
         drift: -40 + Math.random() * 80,
       })),
@@ -97,11 +97,11 @@ export default function MoneyBackground() {
             viewBox="0 0 80 40"
             className="drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]"
           >
-            <rect x="1" y="1" width="78" height="38" rx="3" fill="#0f2e17" stroke="#3ea36a" strokeWidth="1" />
-            <circle cx="40" cy="20" r="10" fill="none" stroke="#7ed3a4" strokeWidth="1.2" />
-            <text x="40" y="24" textAnchor="middle" fontFamily="serif" fontSize="10" fontWeight="700" fill="#c8f1d8">$</text>
-            <text x="8" y="12" fontFamily="serif" fontSize="7" fontWeight="700" fill="#7ed3a4">100</text>
-            <text x="64" y="34" fontFamily="serif" fontSize="7" fontWeight="700" fill="#7ed3a4">100</text>
+            <rect x="1" y="1" width="78" height="38" rx="3" fill="#710014" stroke="#C00020" strokeWidth="1" />
+            <circle cx="40" cy="20" r="10" fill="none" stroke="#C00020" strokeWidth="1.2" />
+            <text x="40" y="24" textAnchor="middle" fontFamily="serif" fontSize="10" fontWeight="700" fill="#ff4d6d">$</text>
+            <text x="8" y="12" fontFamily="serif" fontSize="7" fontWeight="700" fill="#ff4d6d">100</text>
+            <text x="64" y="34" fontFamily="serif" fontSize="7" fontWeight="700" fill="#ff4d6d">100</text>
           </svg>
         </div>
       ))}
