@@ -6,6 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+const CODE_DOMAIN = "yakuza.local";
+
+function normalizeCode(raw: string) {
+  return raw.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -25,26 +31,36 @@ Deno.serve(async (req) => {
     if (!isAdmin) return json({ error: "acesso negado" }, 403);
 
     const body = await req.json();
-    const email = String(body.email ?? "").trim();
-    const password = String(body.password ?? "");
     const full_name = String(body.full_name ?? "").trim();
+    const access_code = normalizeCode(String(body.access_code ?? ""));
     const grantAdmin = !!body.is_admin;
-    if (!email || password.length < 6 || !full_name) return json({ error: "dados inválidos" }, 400);
+
+    if (!full_name) return json({ error: "informe o nome do aluno" }, 400);
+    if (access_code.length < 4) return json({ error: "o código deve ter ao menos 4 caracteres alfanuméricos" }, 400);
+
+    const { data: exists } = await admin.from("profiles").select("id").eq("access_code", access_code).maybeSingle();
+    if (exists) return json({ error: "este código já está em uso" }, 400);
+
+    const syntheticEmail = `${access_code}@${CODE_DOMAIN}`;
+    const password = access_code;
 
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
-      email,
+      email: syntheticEmail,
       password,
       email_confirm: true,
-      user_metadata: { full_name },
+      user_metadata: { full_name, access_code },
     });
     if (createErr || !created?.user) return json({ error: createErr?.message ?? "erro ao criar" }, 400);
 
     const newId = created.user.id;
-    await admin.from("profiles").upsert({ id: newId, email, full_name }, { onConflict: "id" });
+    await admin.from("profiles").upsert(
+      { id: newId, email: syntheticEmail, full_name, access_code },
+      { onConflict: "id" },
+    );
     if (grantAdmin) {
       await admin.from("user_roles").upsert({ user_id: newId, role: "admin" }, { onConflict: "user_id,role" });
     }
-    return json({ ok: true, id: newId });
+    return json({ ok: true, id: newId, access_code });
   } catch (e) {
     return json({ error: (e as Error).message }, 500);
   }
