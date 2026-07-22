@@ -66,13 +66,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </Button>
           </div>
 
-          <button
-            className="md:hidden p-2 rounded-md hover:bg-secondary"
-            onClick={() => setOpen((v) => !v)}
-            aria-label="Menu"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+          <div className="md:hidden flex items-center gap-1">
+            <ThemeToggle />
+            <button
+              className="p-2 rounded-md hover:bg-secondary"
+              onClick={() => setOpen((v) => !v)}
+              aria-label="Menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          </div>
+
         </div>
         {open && (
           <div className="md:hidden border-t border-border/60 bg-[hsl(var(--carbon))]">
