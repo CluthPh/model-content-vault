@@ -36,12 +36,10 @@ function Protected({ children, admin }: { children: JSX.Element; admin?: boolean
 const App = () => (
   <QueryClientProvider client={qc}>
     <TooltipProvider>
-      <ThemeProvider>
-        <Toaster />
-        <Sonner />
-        <AuthProvider>
-          <BrowserRouter>
-
+      <Toaster />
+      <Sonner />
+      <AuthProvider>
+        <BrowserRouter>
           <Routes>
             <Route path="/" element={<AgeGate />} />
             <Route path="/login" element={<Login />} />
@@ -64,10 +62,8 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-        </AuthProvider>
-      </ThemeProvider>
+      </AuthProvider>
     </TooltipProvider>
-
   </QueryClientProvider>
 );
 
