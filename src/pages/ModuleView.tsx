@@ -6,20 +6,24 @@ import { useAuth } from "@/lib/auth";
 import { ArrowLeft, FileText, Image as ImageIcon, Music, Video } from "lucide-react";
 import { toast } from "sonner";
 
+type ContentType = "video" | "audio" | "photo" | "text" | "file";
 type Content = {
   id: string;
-  title: string;
-  description: string | null;
-  content_type: "video" | "audio" | "image" | "text" | "file";
+  title: string | null;
+  body: string | null;
+  type: ContentType;
   media_url: string | null;
-  text_body: string | null;
-  sort_order: number;
+  external_url: string | null;
+  order_index: number;
 };
 
 type Module = { id: string; title: string; description: string | null };
 
-const iconOf = (t: Content["content_type"]) =>
-  t === "video" ? Video : t === "audio" ? Music : t === "image" ? ImageIcon : FileText;
+const iconOf = (t: ContentType) =>
+  t === "video" ? Video : t === "audio" ? Music : t === "photo" ? ImageIcon : FileText;
+
+const labelOf = (t: ContentType) =>
+  ({ video: "Vídeo", audio: "Áudio", photo: "Imagem", text: "Texto", file: "Arquivo" }[t]);
 
 export default function ModuleView() {
   const { id } = useParams();
@@ -42,11 +46,12 @@ export default function ModuleView() {
       }
       const [{ data: m }, { data: c }] = await Promise.all([
         supabase.from("modules").select("id,title,description").eq("id", id).maybeSingle(),
-        supabase.from("module_contents").select("*").eq("module_id", id).order("sort_order"),
+        supabase.from("module_contents").select("id,title,body,type,media_url,external_url,order_index").eq("module_id", id).order("order_index"),
       ]);
       setMod(m as Module);
-      setContents((c as Content[]) ?? []);
-      if (c && c.length) setActive(c[0] as Content);
+      const list = (c ?? []) as Content[];
+      setContents(list);
+      if (list.length) setActive(list[0]);
     })();
   }, [id, user, isAdmin, nav]);
 
@@ -68,25 +73,25 @@ export default function ModuleView() {
             <p className="text-muted-foreground">Nenhum conteúdo disponível neste módulo.</p>
           ) : (
             <>
-              <h2 className="text-xl font-semibold">{active.title}</h2>
-              {active.description && <p className="text-sm text-muted-foreground mt-1">{active.description}</p>}
+              <p className="text-xs uppercase tracking-widest text-primary">{labelOf(active.type)}</p>
+              <h2 className="text-xl font-semibold mt-1">{active.title}</h2>
               <div className="mt-5">
-                {active.content_type === "video" && active.media_url && (
+                {active.type === "video" && active.media_url && (
                   <video src={active.media_url} controls className="w-full rounded-lg bg-black" controlsList="nodownload" />
                 )}
-                {active.content_type === "audio" && active.media_url && (
+                {active.type === "audio" && active.media_url && (
                   <audio src={active.media_url} controls className="w-full" controlsList="nodownload" />
                 )}
-                {active.content_type === "image" && active.media_url && (
-                  <img src={active.media_url} alt={active.title} className="w-full rounded-lg" />
+                {active.type === "photo" && active.media_url && (
+                  <img src={active.media_url} alt={active.title ?? ""} className="w-full rounded-lg" />
                 )}
-                {active.content_type === "text" && (
-                  <div className="prose prose-invert whitespace-pre-wrap text-sm leading-relaxed">
-                    {active.text_body}
+                {active.type === "text" && (
+                  <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+                    {active.body}
                   </div>
                 )}
-                {active.content_type === "file" && active.media_url && (
-                  <a href={active.media_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-md gradient-primary btn-glow text-sm">
+                {active.type === "file" && (active.media_url || active.external_url) && (
+                  <a href={active.media_url ?? active.external_url!} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-md gradient-primary btn-glow text-sm">
                     <FileText className="h-4 w-4" /> Abrir arquivo
                   </a>
                 )}
@@ -99,7 +104,7 @@ export default function ModuleView() {
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3 px-2">Conteúdos</p>
           <div className="space-y-1">
             {contents.map((c) => {
-              const Icon = iconOf(c.content_type);
+              const Icon = iconOf(c.type);
               const isActive = active?.id === c.id;
               return (
                 <button
@@ -110,7 +115,7 @@ export default function ModuleView() {
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{c.title}</span>
+                  <span className="truncate">{c.title ?? labelOf(c.type)}</span>
                 </button>
               );
             })}

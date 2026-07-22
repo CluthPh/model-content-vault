@@ -8,24 +8,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 export default function AdminSettings() {
-  const [platform_name, setName] = useState("Yakuza Mentor");
+  const [platformName, setName] = useState("Yakuza Mentor");
   const [tagline, setTagline] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("platform_settings").select("*").eq("id", 1).maybeSingle();
-      if (data) {
-        setName(data.platform_name ?? "Yakuza Mentor");
-        setTagline(data.tagline ?? "");
-      }
+      const { data } = await supabase.from("platform_settings").select("key,value").in("key", ["platform_name", "tagline"]);
+      data?.forEach((row: any) => {
+        if (row.key === "platform_name") setName(typeof row.value === "string" ? row.value : String(row.value ?? ""));
+        if (row.key === "tagline") setTagline(typeof row.value === "string" ? row.value : String(row.value ?? ""));
+      });
     })();
   }, []);
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const { error } = await supabase.from("platform_settings").upsert({ id: 1, platform_name, tagline });
+    const { error } = await supabase.from("platform_settings").upsert([
+      { key: "platform_name", value: platformName as any },
+      { key: "tagline", value: tagline as any },
+    ], { onConflict: "key" });
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Configurações salvas");
@@ -38,7 +41,7 @@ export default function AdminSettings() {
       <form onSubmit={save} className="card-border rounded-xl p-6 space-y-4 max-w-xl">
         <div>
           <Label>Nome da plataforma</Label>
-          <Input value={platform_name} onChange={(e) => setName(e.target.value)} />
+          <Input value={platformName} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
           <Label>Tagline</Label>

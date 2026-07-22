@@ -16,41 +16,43 @@ type Module = {
   title: string;
   description: string | null;
   cover_url: string | null;
-  is_published: boolean;
-  sort_order: number;
+  active: boolean;
+  locked: boolean;
+  order_index: number;
 };
 
 export default function AdminModules() {
   const [mods, setMods] = useState<Module[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Module | null>(null);
-  const [form, setForm] = useState({ title: "", description: "", cover_url: "", is_published: true });
+  const [form, setForm] = useState({ title: "", description: "", cover_url: "", active: true });
+  const [uploading, setUploading] = useState(false);
 
   const load = async () => {
-    const { data } = await supabase.from("modules").select("*").order("sort_order");
-    setMods(data ?? []);
+    const { data } = await supabase.from("modules").select("*").order("order_index");
+    setMods((data as Module[]) ?? []);
   };
   useEffect(() => { load(); }, []);
 
   const openNew = () => {
     setEditing(null);
-    setForm({ title: "", description: "", cover_url: "", is_published: true });
+    setForm({ title: "", description: "", cover_url: "", active: true });
     setOpen(true);
   };
   const openEdit = (m: Module) => {
     setEditing(m);
-    setForm({ title: m.title, description: m.description ?? "", cover_url: m.cover_url ?? "", is_published: m.is_published });
+    setForm({ title: m.title, description: m.description ?? "", cover_url: m.cover_url ?? "", active: m.active });
     setOpen(true);
   };
 
   const uploadCover = async (file: File) => {
+    setUploading(true);
     const path = `covers/${Date.now()}-${file.name.replace(/[^a-z0-9.\-]/gi, "_")}`;
     const { error } = await supabase.storage.from("mentor-media").upload(path, file);
-    if (error) return toast.error(error.message);
-    const { data } = supabase.storage.from("mentor-media").createSignedUrl(path, 60 * 60 * 24 * 365);
-    // Use signed URL fallback
-    const signed = await supabase.storage.from("mentor-media").createSignedUrl(path, 60 * 60 * 24 * 365);
-    setForm((f) => ({ ...f, cover_url: signed.data?.signedUrl ?? "" }));
+    if (error) { setUploading(false); return toast.error(error.message); }
+    const { data } = await supabase.storage.from("mentor-media").createSignedUrl(path, 60 * 60 * 24 * 365);
+    setForm((f) => ({ ...f, cover_url: data?.signedUrl ?? "" }));
+    setUploading(false);
   };
 
   const save = async (e: FormEvent) => {
@@ -59,8 +61,8 @@ export default function AdminModules() {
       const { error } = await supabase.from("modules").update(form).eq("id", editing.id);
       if (error) return toast.error(error.message);
     } else {
-      const sort = (mods[mods.length - 1]?.sort_order ?? 0) + 1;
-      const { error } = await supabase.from("modules").insert({ ...form, sort_order: sort });
+      const order_index = (mods[mods.length - 1]?.order_index ?? 0) + 1;
+      const { error } = await supabase.from("modules").insert({ ...form, order_index });
       if (error) return toast.error(error.message);
     }
     toast.success("Salvo");
@@ -79,8 +81,8 @@ export default function AdminModules() {
     const idx = mods.findIndex((x) => x.id === m.id);
     const swap = mods[idx + dir];
     if (!swap) return;
-    await supabase.from("modules").update({ sort_order: swap.sort_order }).eq("id", m.id);
-    await supabase.from("modules").update({ sort_order: m.sort_order }).eq("id", swap.id);
+    await supabase.from("modules").update({ order_index: swap.order_index }).eq("id", m.id);
+    await supabase.from("modules").update({ order_index: m.order_index }).eq("id", swap.id);
     load();
   };
 
@@ -109,13 +111,14 @@ export default function AdminModules() {
               <div>
                 <Label>Imagem de capa</Label>
                 <Input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadCover(e.target.files[0])} />
+                {uploading && <p className="text-xs text-muted-foreground mt-1">Enviando...</p>}
                 {form.cover_url && <img src={form.cover_url} alt="" className="mt-2 h-24 rounded" />}
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="pub">Publicado</Label>
-                <Switch id="pub" checked={form.is_published} onCheckedChange={(v) => setForm({ ...form, is_published: v })} />
+                <Switch id="pub" checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
               </div>
-              <Button className="w-full gradient-primary btn-glow">Salvar</Button>
+              <Button className="w-full gradient-primary btn-glow" disabled={uploading}>Salvar</Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -130,7 +133,7 @@ export default function AdminModules() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold truncate">{m.title}</h3>
-                {!m.is_published && <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded bg-secondary text-muted-foreground">Rascunho</span>}
+                {!m.active && <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded bg-secondary text-muted-foreground">Rascunho</span>}
               </div>
               <p className="text-sm text-muted-foreground truncate">{m.description}</p>
             </div>

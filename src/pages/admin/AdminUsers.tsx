@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Plus, ShieldCheck, User as UserIcon } from "lucide-react";
 
-type ProfileRow = { id: string; email: string; full_name: string | null };
+type ProfileRow = { id: string; email: string | null; full_name: string | null };
 type ModuleRow = { id: string; title: string };
 
 export default function AdminUsers() {
@@ -24,13 +24,13 @@ export default function AdminUsers() {
 
   const load = async () => {
     const [{ data: p }, { data: m }, { data: r }, { data: a }] = await Promise.all([
-      supabase.from("profiles").select("id,email,full_name").order("created_at", { ascending: false }),
-      supabase.from("modules").select("id,title").order("sort_order"),
+      (supabase.from("profiles") as any).select("id,email,full_name").order("created_at", { ascending: false }),
+      supabase.from("modules").select("id,title").order("order_index"),
       supabase.from("user_roles").select("user_id,role"),
       supabase.from("module_access").select("user_id,module_id"),
     ]);
-    setUsers(p ?? []);
-    setModules(m ?? []);
+    setUsers((p as ProfileRow[]) ?? []);
+    setModules((m as ModuleRow[]) ?? []);
     setAdmins(new Set((r ?? []).filter((x: any) => x.role === "admin").map((x: any) => x.user_id)));
     const map: Record<string, Set<string>> = {};
     (a ?? []).forEach((row: any) => {
@@ -44,9 +44,7 @@ export default function AdminUsers() {
   const createUser = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const { data, error } = await supabase.functions.invoke("admin-create-user", {
-      body: form,
-    });
+    const { data, error } = await supabase.functions.invoke("admin-create-user", { body: form });
     setSaving(false);
     if (error || (data as any)?.error) {
       toast.error("Erro ao criar", { description: error?.message ?? (data as any)?.error });
@@ -107,7 +105,7 @@ export default function AdminUsers() {
                   <h3 className="font-semibold truncate">{u.full_name ?? "Sem nome"}</h3>
                   {isAdm && <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded gradient-primary">Admin</span>}
                 </div>
-                <p className="text-sm text-muted-foreground truncate">{u.email}</p>
+                <p className="text-sm text-muted-foreground truncate">{u.email ?? "—"}</p>
               </div>
               <Button variant="secondary" size="sm" onClick={() => setManageUser(u)}>Gerenciar acessos</Button>
             </div>

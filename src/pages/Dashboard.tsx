@@ -11,8 +11,9 @@ type Module = {
   title: string;
   description: string | null;
   cover_url: string | null;
-  is_published: boolean;
-  sort_order: number;
+  active: boolean;
+  locked: boolean;
+  order_index: number;
 };
 
 export default function Dashboard() {
@@ -25,16 +26,16 @@ export default function Dashboard() {
     (async () => {
       if (!user) return;
       const [{ data: mods }, { data: access }] = await Promise.all([
-        supabase.from("modules").select("*").eq("is_published", true).order("sort_order"),
+        supabase.from("modules").select("*").eq("active", true).order("order_index"),
         supabase.from("module_access").select("module_id").eq("user_id", user.id),
       ]);
-      setModules(mods ?? []);
+      setModules((mods as Module[]) ?? []);
       setAccessSet(new Set((access ?? []).map((a) => a.module_id)));
       setLoading(false);
     })();
   }, [user]);
 
-  const hasAccess = (id: string) => isAdmin || accessSet.has(id);
+  const hasAccess = (m: Module) => isAdmin || (!m.locked && accessSet.has(m.id));
 
   return (
     <AppLayout>
@@ -69,13 +70,13 @@ export default function Dashboard() {
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {modules.map((m) => {
-              const locked = !hasAccess(m.id);
+              const unlocked = hasAccess(m);
               return (
                 <Link
                   key={m.id}
-                  to={locked ? "#" : `/app/modulos/${m.id}`}
-                  onClick={(e) => locked && e.preventDefault()}
-                  className={`card-border rounded-xl overflow-hidden group ${locked ? "opacity-70 cursor-not-allowed" : ""}`}
+                  to={unlocked ? `/app/modulos/${m.id}` : "#"}
+                  onClick={(e) => !unlocked && e.preventDefault()}
+                  className={`card-border rounded-xl overflow-hidden group ${!unlocked ? "opacity-70 cursor-not-allowed" : ""}`}
                 >
                   <div className="aspect-video bg-secondary relative overflow-hidden">
                     {m.cover_url ? (
@@ -85,7 +86,7 @@ export default function Dashboard() {
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     <div className="absolute top-3 right-3">
-                      {locked ? (
+                      {!unlocked ? (
                         <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-black/60 backdrop-blur border border-border">
                           <Lock className="h-3 w-3" /> Bloqueado
                         </span>
