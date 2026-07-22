@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { ThemeProvider } from "@/lib/theme";
+
 
 import AgeGate from "./pages/AgeGate";
 import Login from "./pages/Login";
@@ -36,12 +36,10 @@ function Protected({ children, admin }: { children: JSX.Element; admin?: boolean
 const App = () => (
   <QueryClientProvider client={qc}>
     <TooltipProvider>
-      <ThemeProvider>
-        <Toaster />
-        <Sonner />
-        <AuthProvider>
-          <BrowserRouter>
-
+      <Toaster />
+      <Sonner />
+      <AuthProvider>
+        <BrowserRouter>
           <Routes>
             <Route path="/" element={<AgeGate />} />
             <Route path="/login" element={<Login />} />
@@ -64,10 +62,8 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-        </AuthProvider>
-      </ThemeProvider>
+      </AuthProvider>
     </TooltipProvider>
-
   </QueryClientProvider>
 );
 
