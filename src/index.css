@@ -98,3 +98,23 @@
     box-shadow: 0 0 24px hsl(var(--primary) / 0.15);
   }
 }
+
+@keyframes money-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% {
+    transform: translate3d(var(--drift, 0px), 115vh, 0) rotate(var(--rot, 25deg));
+    opacity: 0;
+  }
+}
+.animate-money-fall {
+  animation-name: money-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+

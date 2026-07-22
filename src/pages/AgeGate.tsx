@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Shield, ArrowRight } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import MoneyBackground from "@/components/MoneyBackground";
 
 export default function AgeGate() {
   const nav = useNavigate();
@@ -18,8 +19,9 @@ export default function AgeGate() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="max-w-lg w-full card-border rounded-2xl p-8 md:p-10 text-center animate-fade-in">
+    <div className="relative min-h-screen flex items-center justify-center p-6">
+      <MoneyBackground />
+      <div className="max-w-lg w-full card-border rounded-2xl p-8 md:p-10 text-center animate-fade-in backdrop-blur-sm bg-card/80">
         <div className="mx-auto mb-6 h-14 w-14 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
           <Shield className="h-7 w-7 text-primary-foreground" />
         </div>
