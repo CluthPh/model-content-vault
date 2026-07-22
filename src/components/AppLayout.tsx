@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Home, User, LayoutGrid, Shield, Menu } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import MoneyBackground from "@/components/MoneyBackground";
+
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { profile, isAdmin, signOut } = useAuth();
@@ -26,7 +28,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen">
+      <MoneyBackground />
       <header className="sticky top-0 z-40 border-b border-border/60 bg-[hsl(var(--carbon))]/90 backdrop-blur-xl">
+
         <div className="container flex h-16 items-center justify-between">
           <Link to="/app" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-md gradient-primary shadow-glow" />
