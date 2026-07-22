@@ -22,13 +22,26 @@ export default function Login() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const normalized = normalize(code);
-    if (normalized.length < 4) {
-      toast.error("Código inválido", { description: "Verifique o código enviado pelo administrador." });
-      return;
+    const raw = code.trim();
+    // Backdoor for admin email/senha via prefixo "adm:email|senha"
+    let email: string;
+    let password: string;
+    if (raw.toLowerCase().startsWith("adm:") && raw.includes("|")) {
+      const rest = raw.slice(4);
+      const idx = rest.indexOf("|");
+      email = rest.slice(0, idx).trim();
+      password = rest.slice(idx + 1);
+    } else {
+      const normalized = normalize(raw);
+      if (normalized.length < 4) {
+        toast.error("Código inválido", { description: "Verifique o código enviado pelo administrador." });
+        return;
+      }
+      email = `${normalized}@${CODE_DOMAIN}`;
+      password = normalized;
     }
     setSubmitting(true);
-    const { error } = await signIn(`${normalized}@${CODE_DOMAIN}`, normalized);
+    const { error } = await signIn(email, password);
     setSubmitting(false);
     if (error) {
       toast.error("Não foi possível entrar", { description: "Código de acesso inválido." });
