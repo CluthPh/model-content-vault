@@ -6,6 +6,8 @@ import { LogOut, Home, User, LayoutGrid, Shield, Menu } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import MoneyBackground from "@/components/MoneyBackground";
+import ThemeToggle from "@/components/ThemeToggle";
+
 
 
 export default function AppLayout({ children }: { children: ReactNode }) {
