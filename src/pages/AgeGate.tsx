@@ -24,7 +24,7 @@ export default function AgeGate() {
           <Shield className="h-7 w-7 text-white" />
         </div>
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-          YAKUZA <span className="text-primary">MENTOR</span>
+          YAKUZA <span className="text-primary">MENTORY</span>
         </h1>
         <p className="text-sm text-muted-foreground mt-1 uppercase tracking-widest">Área exclusiva +18</p>
 
@@ -41,7 +41,7 @@ export default function AgeGate() {
 
         <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
           <Button size="lg" className="btn-glow gradient-primary" onClick={confirm} disabled={loading}>
-            Sou maior de 18 anos <ArrowRight className="ml-2 h-4 w-4" />
+            ENTRAR <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
           <Button size="lg" variant="ghost" asChild>
             <a href="https://www.google.com">Sair</a>
