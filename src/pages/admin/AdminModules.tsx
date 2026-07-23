@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { ArrowUp, ArrowDown, Pencil, Plus, Trash2, ListPlus } from "lucide-react";
-import { getMediaUrls } from "@/lib/media";
+import { getMediaUrl, getMediaUrls, invalidateMediaCache } from "@/lib/media";
 
 type Module = {
   id: string;
