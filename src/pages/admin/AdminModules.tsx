@@ -123,13 +123,27 @@ export default function AdminModules() {
               </div>
               <div>
                 <Label>Imagem de capa</Label>
+                {coverPreview && (
+                  <div className="mt-2 mb-2 relative w-40 h-24 rounded overflow-hidden bg-secondary">
+                    <img src={coverPreview} alt="" className="w-full h-full object-cover" />
+                    <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6" onClick={removeCover}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
                 <Input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadCover(e.target.files[0])} />
                 {uploading && <p className="text-xs text-muted-foreground mt-1">Enviando...</p>}
-                {form.cover_url && <p className="text-xs text-muted-foreground mt-1 truncate">Imagem carregada</p>}
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="pub">Publicado</Label>
                 <Switch id="pub" checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="lck">Bloqueado</Label>
+                  <p className="text-xs text-muted-foreground">Exige liberação individual por aluno</p>
+                </div>
+                <Switch id="lck" checked={form.locked} onCheckedChange={(v) => setForm({ ...form, locked: v })} />
               </div>
               <Button className="w-full gradient-primary btn-glow" disabled={uploading}>Salvar</Button>
             </form>
