@@ -41,12 +41,14 @@ export default function AdminModules() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ title: "", description: "", cover_url: "", active: true });
+    setForm({ title: "", description: "", cover_url: "", active: true, locked: false });
+    setCoverPreview(null);
     setOpen(true);
   };
-  const openEdit = (m: Module) => {
+  const openEdit = async (m: Module) => {
     setEditing(m);
-    setForm({ title: m.title, description: m.description ?? "", cover_url: m.cover_url ?? "", active: m.active });
+    setForm({ title: m.title, description: m.description ?? "", cover_url: m.cover_url ?? "", active: m.active, locked: m.locked });
+    setCoverPreview(await getMediaUrl(m.cover_url));
     setOpen(true);
   };
 
@@ -55,8 +57,15 @@ export default function AdminModules() {
     const path = `covers/${Date.now()}-${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
     const { error } = await supabase.storage.from("mentor-media").upload(path, file);
     if (error) { setUploading(false); return toast.error(error.message); }
+    invalidateMediaCache(path);
     setForm((f) => ({ ...f, cover_url: path }));
+    setCoverPreview(await getMediaUrl(path));
     setUploading(false);
+  };
+
+  const removeCover = () => {
+    setForm((f) => ({ ...f, cover_url: "" }));
+    setCoverPreview(null);
   };
 
   const save = async (e: FormEvent) => {
