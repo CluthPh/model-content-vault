@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowUp, ArrowDown, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowUp, ArrowDown, Pencil, Plus, Trash2, X } from "lucide-react";
+import { getMediaUrl, invalidateMediaCache } from "@/lib/media";
 
 type ContentType = "video" | "audio" | "photo" | "text" | "file";
 type Content = {
