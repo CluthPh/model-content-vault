@@ -37,6 +37,7 @@ export default function AdminModuleContents() {
     title: "", body: "", type: "video", media_url: "", external_url: "",
   });
   const [uploading, setUploading] = useState(false);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
 
   const load = async () => {
     const [{ data: m }, { data: c }] = await Promise.all([
@@ -51,11 +52,13 @@ export default function AdminModuleContents() {
   const openNew = () => {
     setEditing(null);
     setForm({ title: "", body: "", type: "video", media_url: "", external_url: "" });
+    setMediaPreview(null);
     setOpen(true);
   };
-  const openEdit = (c: Content) => {
+  const openEdit = async (c: Content) => {
     setEditing(c);
     setForm({ title: c.title ?? "", body: c.body ?? "", type: c.type, media_url: c.media_url ?? "", external_url: c.external_url ?? "" });
+    setMediaPreview(await getMediaUrl(c.media_url));
     setOpen(true);
   };
 
@@ -64,8 +67,15 @@ export default function AdminModuleContents() {
     const path = `modules/${id}/${Date.now()}-${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
     const { error } = await supabase.storage.from("mentor-media").upload(path, file);
     if (error) { setUploading(false); return toast.error(error.message); }
+    invalidateMediaCache(path);
     setForm((f) => ({ ...f, media_url: path }));
+    setMediaPreview(await getMediaUrl(path));
     setUploading(false);
+  };
+
+  const removeMedia = () => {
+    setForm((f) => ({ ...f, media_url: "" }));
+    setMediaPreview(null);
   };
 
   const save = async (e: FormEvent) => {
