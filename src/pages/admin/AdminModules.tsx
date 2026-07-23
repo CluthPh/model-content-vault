@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { ArrowUp, ArrowDown, Pencil, Plus, Trash2, ListPlus } from "lucide-react";
-import { getMediaUrls } from "@/lib/media";
+import { getMediaUrl, getMediaUrls, invalidateMediaCache } from "@/lib/media";
 
 type Module = {
   id: string;
@@ -26,7 +26,8 @@ export default function AdminModules() {
   const [mods, setMods] = useState<Module[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Module | null>(null);
-  const [form, setForm] = useState({ title: "", description: "", cover_url: "", active: true });
+  const [form, setForm] = useState({ title: "", description: "", cover_url: "", active: true, locked: false });
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [coverUrls, setCoverUrls] = useState<Map<string, string | null>>(new Map());
   const [uploading, setUploading] = useState(false);
 
@@ -40,12 +41,14 @@ export default function AdminModules() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ title: "", description: "", cover_url: "", active: true });
+    setForm({ title: "", description: "", cover_url: "", active: true, locked: false });
+    setCoverPreview(null);
     setOpen(true);
   };
-  const openEdit = (m: Module) => {
+  const openEdit = async (m: Module) => {
     setEditing(m);
-    setForm({ title: m.title, description: m.description ?? "", cover_url: m.cover_url ?? "", active: m.active });
+    setForm({ title: m.title, description: m.description ?? "", cover_url: m.cover_url ?? "", active: m.active, locked: m.locked });
+    setCoverPreview(await getMediaUrl(m.cover_url));
     setOpen(true);
   };
 
@@ -54,8 +57,15 @@ export default function AdminModules() {
     const path = `covers/${Date.now()}-${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
     const { error } = await supabase.storage.from("mentor-media").upload(path, file);
     if (error) { setUploading(false); return toast.error(error.message); }
+    invalidateMediaCache(path);
     setForm((f) => ({ ...f, cover_url: path }));
+    setCoverPreview(await getMediaUrl(path));
     setUploading(false);
+  };
+
+  const removeCover = () => {
+    setForm((f) => ({ ...f, cover_url: "" }));
+    setCoverPreview(null);
   };
 
   const save = async (e: FormEvent) => {
@@ -113,13 +123,27 @@ export default function AdminModules() {
               </div>
               <div>
                 <Label>Imagem de capa</Label>
+                {coverPreview && (
+                  <div className="mt-2 mb-2 relative w-40 h-24 rounded overflow-hidden bg-secondary">
+                    <img src={coverPreview} alt="" className="w-full h-full object-cover" />
+                    <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6" onClick={removeCover}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
                 <Input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadCover(e.target.files[0])} />
                 {uploading && <p className="text-xs text-muted-foreground mt-1">Enviando...</p>}
-                {form.cover_url && <p className="text-xs text-muted-foreground mt-1 truncate">Imagem carregada</p>}
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="pub">Publicado</Label>
                 <Switch id="pub" checked={form.active} onCheckedChange={(v) => setForm({ ...form, active: v })} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="lck">Bloqueado</Label>
+                  <p className="text-xs text-muted-foreground">Exige liberação individual por aluno</p>
+                </div>
+                <Switch id="lck" checked={form.locked} onCheckedChange={(v) => setForm({ ...form, locked: v })} />
               </div>
               <Button className="w-full gradient-primary btn-glow" disabled={uploading}>Salvar</Button>
             </form>
