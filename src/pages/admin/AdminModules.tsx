@@ -26,7 +26,8 @@ export default function AdminModules() {
   const [mods, setMods] = useState<Module[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Module | null>(null);
-  const [form, setForm] = useState({ title: "", description: "", cover_url: "", active: true });
+  const [form, setForm] = useState({ title: "", description: "", cover_url: "", active: true, locked: false });
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [coverUrls, setCoverUrls] = useState<Map<string, string | null>>(new Map());
   const [uploading, setUploading] = useState(false);
 
