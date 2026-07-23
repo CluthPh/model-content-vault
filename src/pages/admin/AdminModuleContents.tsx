@@ -150,12 +150,34 @@ export default function AdminModuleContents() {
                   <Textarea rows={8} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
                 </div>
               ) : (
-                <div>
-                  <Label>Arquivo ({labelOf(form.type)})</Label>
-                  <Input type="file" accept={acceptOf(form.type)} onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
-                  {uploading && <p className="text-xs text-muted-foreground mt-1">Enviando...</p>}
-                  {form.media_url && <p className="text-xs text-muted-foreground mt-1 truncate">Arquivo carregado</p>}
-                </div>
+                <>
+                  <div>
+                    <Label>Arquivo ({labelOf(form.type)})</Label>
+                    {mediaPreview && (
+                      <div className="mt-2 mb-2 relative rounded overflow-hidden bg-secondary">
+                        {form.type === "photo" && <img src={mediaPreview} alt="" className="max-h-40 w-auto" />}
+                        {form.type === "video" && <video src={mediaPreview} controls className="max-h-48 w-full" />}
+                        {form.type === "audio" && <audio src={mediaPreview} controls className="w-full" />}
+                        {form.type === "file" && <p className="p-3 text-sm">Arquivo carregado</p>}
+                        <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 h-6 w-6" onClick={removeMedia}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                    <Input type="file" accept={acceptOf(form.type)} onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
+                    {uploading && <p className="text-xs text-muted-foreground mt-1">Enviando...</p>}
+                  </div>
+                  <div>
+                    <Label>Ou link externo (YouTube, Vimeo, Drive…)</Label>
+                    <Input
+                      type="url"
+                      placeholder="https://..."
+                      value={form.external_url}
+                      onChange={(e) => setForm({ ...form, external_url: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Use como alternativa ao envio de arquivo.</p>
+                  </div>
+                </>
               )}
               <Button className="w-full gradient-primary btn-glow" disabled={uploading}>Salvar</Button>
             </form>
