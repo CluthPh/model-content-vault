@@ -54,25 +54,25 @@ export default function Dashboard() {
       </section>
 
       <section>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-semibold">Módulos</h2>
-          <span className="text-xs uppercase tracking-widest text-muted-foreground">
-            {modules.length} módulos disponíveis
+        <div className="flex items-center justify-between mb-4 md:mb-6 gap-2">
+          <h2 className="text-xl md:text-2xl font-semibold">Módulos</h2>
+          <span className="text-[10px] md:text-xs uppercase tracking-widest text-muted-foreground text-right">
+            {modules.length} disponíveis
           </span>
         </div>
 
         {loading ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
               <Skeleton key={i} className="aspect-video rounded-xl" />
             ))}
           </div>
         ) : modules.length === 0 ? (
-          <div className="card-border rounded-xl p-10 text-center text-muted-foreground">
+          <div className="card-border rounded-xl p-8 md:p-10 text-center text-muted-foreground">
             Nenhum módulo publicado ainda.
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {modules.map((m) => {
               const unlocked = hasAccess(m);
               return (
