@@ -1,25 +1,35 @@
 import { Link } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import { Users, LayoutGrid, Settings } from "lucide-react";
+import { FileStack, LayoutGrid, Settings, UserPlus, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function AdminHome() {
-  const [stats, setStats] = useState({ users: 0, modules: 0, contents: 0 });
+  const [stats, setStats] = useState({ users: 0, blocked: 0, modules: 0, contents: 0, requests: 0 });
   useEffect(() => {
     (async () => {
-      const [u, m, c] = await Promise.all([
+      const [users, blocked, modules, contents, requests] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("profiles").select("id", { count: "exact", head: true }).eq("blocked", true),
         supabase.from("modules").select("id", { count: "exact", head: true }),
         supabase.from("module_contents").select("id", { count: "exact", head: true }),
+        supabase.from("account_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
       ]);
-      setStats({ users: u.count ?? 0, modules: m.count ?? 0, contents: c.count ?? 0 });
+      setStats({
+        users: users.count ?? 0,
+        blocked: blocked.count ?? 0,
+        modules: modules.count ?? 0,
+        contents: contents.count ?? 0,
+        requests: requests.count ?? 0,
+      });
     })();
   }, []);
 
   const cards = [
+    { to: "/admin/usuarios", label: "Pedidos de acesso", icon: UserPlus, count: stats.requests, desc: "Aprovar ou rejeitar novos cadastros" },
+    { to: "/admin/modulos", label: "Entregáveis", icon: FileStack, count: stats.contents, desc: "Organizar módulos, vídeos, textos e arquivos" },
+    { to: "/admin/usuarios", label: "Usuários", icon: Users, count: stats.users, desc: "Bloquear, excluir e liberar módulos" },
     { to: "/admin/modulos", label: "Módulos", icon: LayoutGrid, count: stats.modules, desc: "Criar e organizar módulos" },
-    { to: "/admin/usuarios", label: "Usuários", icon: Users, count: stats.users, desc: "Cadastrar alunos e liberar acesso" },
     { to: "/admin/configuracoes", label: "Configurações", icon: Settings, count: null, desc: "Ajustes gerais da plataforma" },
   ];
 
@@ -32,13 +42,15 @@ export default function AdminHome() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3 mb-10">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-10">
         <StatCard label="Alunos" value={stats.users} />
+        <StatCard label="Bloqueados" value={stats.blocked} />
+        <StatCard label="Pedidos pendentes" value={stats.requests} />
         <StatCard label="Módulos" value={stats.modules} />
         <StatCard label="Conteúdos" value={stats.contents} />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-5">
         {cards.map((c) => {
           const Icon = c.icon;
           return (
@@ -46,6 +58,9 @@ export default function AdminHome() {
               <Icon className="h-8 w-8 text-primary" />
               <h3 className="mt-4 text-lg font-semibold">{c.label}</h3>
               <p className="text-sm text-muted-foreground mt-1">{c.desc}</p>
+              {c.count !== null && (
+                <p className="mt-4 text-2xl font-bold text-primary">{c.count}</p>
+              )}
             </Link>
           );
         })}

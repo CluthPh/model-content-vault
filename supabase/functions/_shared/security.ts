@@ -34,6 +34,30 @@ export function clients(authHeader = "") {
   };
 }
 
+export async function consumeRateLimit(
+  adminClient: SupabaseClient,
+  namespace: string,
+  key: string,
+  limit: number,
+  windowSeconds: number,
+  blockSeconds = windowSeconds,
+) {
+  const keyHash = await sha256(key);
+  const { data, error } = await adminClient.rpc("consume_api_rate_limit", {
+    p_namespace: namespace,
+    p_key_hash: keyHash,
+    p_limit: limit,
+    p_window_seconds: windowSeconds,
+    p_block_seconds: blockSeconds,
+  });
+  return !error && data === true;
+}
+
+export function requestIp(req: Request) {
+  const forwardedFor = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return req.headers.get("cf-connecting-ip") ?? forwardedFor ?? "unknown";
+}
+
 export async function requireAdmin(req: Request) {
   const authHeader = req.headers.get("Authorization") ?? "";
   const { userClient, adminClient } = clients(authHeader);
@@ -54,6 +78,9 @@ export async function requireAdmin(req: Request) {
   if (!roles?.some((row: { role: string }) => row.role === "admin")) {
     return { error: "acesso negado", status: 403 } as const;
   }
+
+  const allowed = await consumeRateLimit(adminClient, "admin_action", user.id, 60, 60, 300);
+  if (!allowed) return { error: "muitas requisições; aguarde um pouco", status: 429 } as const;
 
   return { user, adminClient: adminClient as SupabaseClient } as const;
 }

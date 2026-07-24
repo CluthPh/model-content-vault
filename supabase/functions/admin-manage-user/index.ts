@@ -28,6 +28,13 @@ Deno.serve(async (req) => {
     if (body.action === "rotate_code") {
       const code = randomCode();
       const hash = await sha256(code.toLowerCase());
+      // Troca a senha interna primeiro. Se a atualização do perfil falhar, o
+      // código anterior continua válido e a conta não fica inacessível.
+      const { error: authError } = await adminClient.auth.admin.updateUserById(targetId, {
+        password: randomPassword(),
+      });
+      if (authError) return json(req, { error: authError.message }, 400);
+
       const { error: profileError } = await adminClient.from("profiles").update({
         access_code: null,
         access_code_hash: hash,
@@ -35,11 +42,6 @@ Deno.serve(async (req) => {
         access_code_updated_at: new Date().toISOString(),
       }).eq("id", targetId);
       if (profileError) return json(req, { error: profileError.message }, 400);
-
-      const { error: authError } = await adminClient.auth.admin.updateUserById(targetId, {
-        password: randomPassword(),
-      });
-      if (authError) return json(req, { error: authError.message }, 400);
       return json(req, { ok: true, access_code: code });
     }
 

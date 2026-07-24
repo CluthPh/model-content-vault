@@ -1,4 +1,4 @@
-import { clients } from "../_shared/security.ts";
+import { clients, consumeRateLimit } from "../_shared/security.ts";
 import { json, preflight } from "../_shared/http.ts";
 
 type RequestBody = { path?: unknown };
@@ -12,6 +12,8 @@ Deno.serve(async (req) => {
     const { userClient, adminClient } = clients(authHeader);
     const { data: { user }, error: userError } = await userClient.auth.getUser();
     if (userError || !user) return json(req, { error: "não autenticado" }, 401);
+    const allowed = await consumeRateLimit(adminClient, "media_url", user.id, 120, 60, 300);
+    if (!allowed) return json(req, { error: "muitas requisições" }, 429);
 
     const body = await req.json() as RequestBody;
     const path = String(body.path ?? "");

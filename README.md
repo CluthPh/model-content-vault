@@ -2,6 +2,10 @@
 
 Plataforma privada de mentoria construída com React, Vite e Supabase.
 
+## Publicação
+
+Use o guia completo: [DEPLOY.md](./DEPLOY.md).
+
 ## Desenvolvimento
 
 Requisitos: Node.js 20+ e npm.
@@ -17,6 +21,7 @@ Preencha no `.env` somente as variáveis públicas do projeto:
 ```dotenv
 VITE_SUPABASE_URL=https://SEU_PROJECT_REF.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=SUA_CHAVE_PUBLICAVEL
+VITE_TURNSTILE_SITE_KEY=SUA_SITE_KEY_DO_TURNSTILE
 ```
 
 Nunca coloque `SUPABASE_SERVICE_ROLE_KEY` no frontend ou no Cloudflare Pages. Ela é
@@ -33,6 +38,7 @@ supabase functions deploy admin-create-user
 supabase functions deploy admin-manage-user
 supabase functions deploy login-with-code --no-verify-jwt
 supabase functions deploy media-url
+supabase functions deploy request-access --no-verify-jwt
 ```
 
 No painel do Supabase, em **Authentication > URL Configuration**, defina:

@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,12 +8,15 @@ import { useAuth } from "@/lib/auth";
 import { Loader2, KeyRound } from "lucide-react";
 import MoneyBackground from "@/components/MoneyBackground";
 import { isValidAccessCode, normalizeAccessCode } from "@/lib/access-code";
+import SecurityChallenge from "@/components/SecurityChallenge";
 
 export default function Login() {
   const { signIn, user, loading } = useAuth();
   const nav = useNavigate();
   const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [challengeKey, setChallengeKey] = useState(0);
 
   useEffect(() => {
     if (!loading && user) nav("/app");
@@ -26,10 +29,16 @@ export default function Login() {
       toast.error("Código inválido", { description: "Verifique o código enviado pelo administrador." });
       return;
     }
+    if (!token) {
+      toast.error("Conclua a verificação de segurança.");
+      return;
+    }
     setSubmitting(true);
-    const { error } = await signIn(normalized);
+    const { error } = await signIn(normalized, token);
     setSubmitting(false);
     if (error) {
+      setToken(null);
+      setChallengeKey((value) => value + 1);
       toast.error("Não foi possível entrar", { description: "Código de acesso inválido." });
     } else {
       toast.success("Bem-vindo à mentoria");
@@ -69,11 +78,18 @@ export default function Login() {
               required
             />
           </div>
-          <Button type="submit" className="w-full h-12 gradient-primary btn-glow" disabled={submitting}>
+          <SecurityChallenge action="login" resetKey={challengeKey} onToken={setToken} />
+          <Button type="submit" className="w-full h-12 gradient-primary btn-glow" disabled={submitting || !token}>
             {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Entrar
           </Button>
         </form>
+        <p className="text-sm text-muted-foreground text-center mt-5">
+          Ainda não tem acesso?{" "}
+          <Link to="/solicitar-acesso" className="text-primary hover:underline">
+            Solicitar cadastro
+          </Link>
+        </p>
         <p className="text-xs text-muted-foreground text-center mt-8">
           O acesso é exclusivo. Cada aluno recebe um código único da administração.
         </p>

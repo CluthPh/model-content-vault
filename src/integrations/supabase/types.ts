@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_requests: {
+        Row: {
+          created_at: string
+          created_user_id: string | null
+          email: string
+          email_domain: string
+          full_name: string
+          id: string
+          request_ip_hash: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: "pending" | "processing" | "approved" | "rejected"
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_user_id?: string | null
+          email: string
+          email_domain: string
+          full_name: string
+          id?: string
+          request_ip_hash?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: "pending" | "processing" | "approved" | "rejected"
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_user_id?: string | null
+          email?: string
+          email_domain?: string
+          full_name?: string
+          id?: string
+          request_ip_hash?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: "pending" | "processing" | "approved" | "rejected"
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string | null
@@ -254,6 +296,7 @@ export type Database = {
           access_code_updated_at: string | null
           avatar_url: string | null
           blocked: boolean
+          contact_email: string | null
           created_at: string
           email: string | null
           full_name: string | null
@@ -267,6 +310,7 @@ export type Database = {
           access_code_updated_at?: string | null
           avatar_url?: string | null
           blocked?: boolean
+          contact_email?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -280,6 +324,7 @@ export type Database = {
           access_code_updated_at?: string | null
           avatar_url?: string | null
           blocked?: boolean
+          contact_email?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -314,6 +359,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_api_rate_limit: {
+        Args: {
+          p_block_seconds: number
+          p_key_hash: string
+          p_limit: number
+          p_namespace: string
+          p_window_seconds: number
+        }
+        Returns: boolean
+      }
       consume_access_login_attempt: {
         Args: { p_key_hash: string }
         Returns: boolean

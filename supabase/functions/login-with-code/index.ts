@@ -1,7 +1,14 @@
-import { clients, normalizeCode, sha256 } from "../_shared/security.ts";
+import {
+  clients,
+  consumeRateLimit,
+  normalizeCode,
+  requestIp,
+  sha256,
+} from "../_shared/security.ts";
 import { json, preflight } from "../_shared/http.ts";
+import { verifyTurnstile } from "../_shared/turnstile.ts";
 
-type RequestBody = { access_code?: unknown };
+type RequestBody = { access_code?: unknown; turnstile_token?: unknown };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return preflight(req);
@@ -21,13 +28,28 @@ Deno.serve(async (req) => {
     }
 
     const { adminClient } = clients();
-    const forwardedFor = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
-    const connectingIp = req.headers.get("cf-connecting-ip") ?? forwardedFor ?? "unknown";
-    const rateLimitKey = await sha256(`${connectingIp}:${req.headers.get("user-agent") ?? ""}`);
-    const { data: allowed, error: rateLimitError } = await adminClient
-      .rpc("consume_access_login_attempt", { p_key_hash: rateLimitKey });
-    if (rateLimitError || !allowed) {
+    const ip = requestIp(req);
+    const ipAllowed = await consumeRateLimit(adminClient, "login_ip", ip, 10, 900, 900);
+    const codeAllowed = await consumeRateLimit(adminClient, "login_code", code, 20, 900, 900);
+    if (!ipAllowed || !codeAllowed) {
       return json(req, { error: "muitas tentativas; aguarde alguns minutos" }, 429);
+    }
+
+    const challenge = await verifyTurnstile(
+      String(body.turnstile_token ?? ""),
+      ip,
+      "login",
+    );
+    if (!challenge.ok) {
+      return json(
+        req,
+        {
+          error: challenge.configurationError
+            ? "proteção anti-bot não configurada"
+            : "verificação anti-bot inválida",
+        },
+        challenge.configurationError ? 503 : 400,
+      );
     }
 
     const hash = await sha256(code);

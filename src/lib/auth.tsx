@@ -8,7 +8,7 @@ type AuthCtx = {
   isAdmin: boolean;
   loading: boolean;
   profile: { full_name: string | null; avatar_url: string | null; blocked: boolean } | null;
-  signIn: (accessCode: string) => Promise<{ error: string | null }>;
+  signIn: (accessCode: string, turnstileToken: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -67,9 +67,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const signIn = async (accessCode: string) => {
+  const signIn = async (accessCode: string, turnstileToken: string) => {
     const { data, error } = await supabase.functions.invoke("login-with-code", {
-      body: { access_code: accessCode },
+      body: { access_code: accessCode, turnstile_token: turnstileToken },
     });
     if (error || !data?.token_hash) {
       return { error: data?.error ?? error?.message ?? "Código inválido" };

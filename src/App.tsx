@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/lib/theme";
 import AgeGate from "./pages/AgeGate";
 import Login from "./pages/Login";
 
+const RequestAccess = lazy(() => import("./pages/RequestAccess"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const AdultNotice = lazy(() => import("./pages/AdultNotice"));
@@ -58,6 +59,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<AgeGate />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/solicitar-acesso" element={<RequestAccess />} />
                 <Route path="/termos" element={<Terms />} />
                 <Route path="/privacidade" element={<Privacy />} />
                 <Route path="/aviso-adulto" element={<AdultNotice />} />

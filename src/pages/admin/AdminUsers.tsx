@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Ban, Copy, KeyRound, Plus, ShieldCheck, Trash2, User as UserIcon } from "lucide-react";
+import { Ban, Copy, KeyRound, Mail, Plus, ShieldCheck, Trash2, UserCheck, User as UserIcon, XCircle } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 
 type ProfileRow = {
   id: string;
@@ -19,9 +20,18 @@ type ModuleRow = { id: string; title: string };
 type RoleRow = { user_id: string; role: string };
 type AccessRow = { user_id: string; module_id: string };
 type FunctionResponse = { ok?: boolean; error?: string; access_code?: string };
+type AccountRequest = {
+  id: string;
+  full_name: string;
+  email: string;
+  status: "pending" | "processing" | "approved" | "rejected";
+  created_at: string;
+};
 
 export default function AdminUsers() {
+  const { user: currentAdmin } = useAuth();
   const [users, setUsers] = useState<ProfileRow[]>([]);
+  const [requests, setRequests] = useState<AccountRequest[]>([]);
   const [modules, setModules] = useState<ModuleRow[]>([]);
   const [admins, setAdmins] = useState<Set<string>>(new Set());
   const [accessMap, setAccessMap] = useState<Record<string, Set<string>>>({});
@@ -30,13 +40,15 @@ export default function AdminUsers() {
   const [saving, setSaving] = useState(false);
   const [manageUser, setManageUser] = useState<ProfileRow | null>(null);
   const [revealedCode, setRevealedCode] = useState<string | null>(null);
+  const [processingRequest, setProcessingRequest] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [{ data: profiles }, { data: moduleRows }, { data: roles }, { data: access }] = await Promise.all([
+    const [{ data: profiles }, { data: moduleRows }, { data: roles }, { data: access }, { data: requestRows }] = await Promise.all([
       supabase.from("profiles").select("id,access_code_last4,full_name,blocked").order("created_at", { ascending: false }),
       supabase.from("modules").select("id,title").order("order_index"),
       supabase.from("user_roles").select("user_id,role"),
       supabase.from("module_access").select("user_id,module_id"),
+      supabase.from("account_requests").select("id,full_name,email,status,created_at").order("created_at", { ascending: false }).limit(100),
     ]);
     setUsers((profiles as ProfileRow[]) ?? []);
     setModules((moduleRows as ModuleRow[]) ?? []);
@@ -47,6 +59,7 @@ export default function AdminUsers() {
       map[row.user_id].add(row.module_id);
     });
     setAccessMap(map);
+    setRequests((requestRows as AccountRequest[]) ?? []);
   }, []);
 
   useEffect(() => { void load(); }, [load]);
@@ -84,6 +97,41 @@ export default function AdminUsers() {
       setRevealedCode(response.access_code);
       await load();
     }
+  };
+
+  const approveRequest = async (request: AccountRequest) => {
+    setProcessingRequest(request.id);
+    const { data, error } = await supabase.functions.invoke("admin-create-user", {
+      body: { request_id: request.id },
+    });
+    setProcessingRequest(null);
+    const response = data as FunctionResponse | null;
+    if (error || response?.error || !response?.access_code) {
+      return toast.error("Não foi possível aprovar", {
+        description: response?.error ?? error?.message,
+      });
+    }
+    setRevealedCode(response.access_code);
+    toast.success("Solicitação aprovada");
+    await load();
+  };
+
+  const rejectRequest = async (request: AccountRequest) => {
+    const { error } = await supabase.from("account_requests").update({
+      status: "rejected",
+      reviewed_by: currentAdmin?.id ?? null,
+      reviewed_at: new Date().toISOString(),
+    }).eq("id", request.id).eq("status", "pending");
+    if (error) return toast.error(error.message);
+    toast.success("Solicitação rejeitada");
+    await load();
+  };
+
+  const deleteRequest = async (request: AccountRequest) => {
+    if (!confirm(`Excluir a solicitação de ${request.full_name}?`)) return;
+    const { error } = await supabase.from("account_requests").delete().eq("id", request.id);
+    if (error) return toast.error(error.message);
+    await load();
   };
 
   const setBlocked = async (user: ProfileRow) => {
@@ -154,6 +202,74 @@ export default function AdminUsers() {
         </Dialog>
       </div>
 
+      <section className="mb-10">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-xl font-semibold">Pedidos de acesso</h2>
+            <p className="text-sm text-muted-foreground">
+              Aprovar cria a conta; os e-mails administrativos permitidos recebem a função de admin automaticamente.
+            </p>
+          </div>
+          <span className="rounded-full bg-primary/15 px-3 py-1 text-xs text-primary">
+            {requests.filter((request) => request.status === "pending").length} pendentes
+          </span>
+        </div>
+        <div className="space-y-3">
+          {requests.map((request) => (
+            <div key={request.id} className="card-border rounded-xl p-4 flex flex-wrap items-center gap-4">
+              <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center">
+                <Mail className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-[220px] flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-semibold">{request.full_name}</h3>
+                  <span className={`text-[10px] uppercase tracking-widest px-2 py-0.5 rounded ${
+                    request.status === "pending"
+                      ? "bg-primary/15 text-primary"
+                      : request.status === "approved"
+                        ? "bg-emerald-500/15 text-emerald-400"
+                        : "bg-secondary text-muted-foreground"
+                  }`}>
+                    {request.status === "pending" ? "Pendente" : request.status === "approved" ? "Aprovado" : request.status === "processing" ? "Processando" : "Rejeitado"}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground break-all">{request.email}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {new Date(request.created_at).toLocaleString("pt-BR")}
+                </p>
+              </div>
+              {request.status === "pending" ? (
+                <>
+                  <Button
+                    size="sm"
+                    onClick={() => approveRequest(request)}
+                    disabled={processingRequest === request.id}
+                  >
+                    <UserCheck className="h-4 w-4 mr-1" />
+                    {processingRequest === request.id ? "Aprovando..." : "Aprovar"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => rejectRequest(request)}>
+                    <XCircle className="h-4 w-4 mr-1" /> Rejeitar
+                  </Button>
+                </>
+              ) : (
+                <Button size="icon" variant="ghost" onClick={() => deleteRequest(request)} aria-label="Excluir solicitação">
+                  <Trash2 className="h-4 w-4 text-primary" />
+                </Button>
+              )}
+            </div>
+          ))}
+          {requests.length === 0 && (
+            <div className="card-border rounded-xl p-8 text-center text-muted-foreground">
+              Nenhum pedido de acesso.
+            </div>
+          )}
+        </div>
+      </section>
+
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold">Alunos cadastrados</h2>
+      </div>
       <div className="space-y-3">
         {users.map((user) => {
           const isAdmin = admins.has(user.id);
