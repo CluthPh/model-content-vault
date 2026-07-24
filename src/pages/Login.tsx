@@ -83,7 +83,7 @@ export default function Login() {
               required
             />
           </div>
-          <Button type="submit" className="w-full gradient-primary btn-glow" disabled={submitting}>
+          <Button type="submit" className="w-full h-12 gradient-primary btn-glow" disabled={submitting}>
             {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Entrar
           </Button>
