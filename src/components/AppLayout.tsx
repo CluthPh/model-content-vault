@@ -33,10 +33,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <MoneyBackground />
       <header className="sticky top-0 z-40 border-b border-border/60 bg-[hsl(var(--carbon))]/90 backdrop-blur-xl">
 
-        <div className="container flex h-16 items-center justify-between">
-          <Link to="/app" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md gradient-primary shadow-glow" />
-            <span className="font-bold tracking-wider text-lg">
+        <div className="container flex h-14 md:h-16 items-center justify-between">
+          <Link to="/app" className="flex items-center gap-2 min-w-0">
+            <div className="h-7 w-7 md:h-8 md:w-8 rounded-md gradient-primary shadow-glow shrink-0" />
+            <span className="font-bold tracking-wider text-base md:text-lg truncate">
               YAKUZA <span className="text-primary">MENTORY</span>
             </span>
           </Link>
