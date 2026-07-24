@@ -70,14 +70,14 @@ export default function ModuleView() {
         <ArrowLeft className="h-4 w-4" /> Voltar aos módulos
       </Link>
       {mod && (
-        <div className="mt-4 mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold">{mod.title}</h1>
-          {mod.description && <p className="text-muted-foreground mt-2 max-w-3xl">{mod.description}</p>}
+        <div className="mt-4 mb-6 md:mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight">{mod.title}</h1>
+          {mod.description && <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-3xl">{mod.description}</p>}
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="card-border rounded-xl p-6 min-h-[400px]">
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="card-border rounded-xl p-4 md:p-6 min-h-[280px] md:min-h-[400px] order-2 lg:order-1">
           {!active ? (
             <p className="text-muted-foreground">Nenhum conteúdo disponível neste módulo.</p>
           ) : (
