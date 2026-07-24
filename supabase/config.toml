@@ -2,3 +2,15 @@ project_id = "jzxaxnaytrjcctgnttfx"
 
 [functions.admin-create-user]
 verify_jwt = true
+
+[functions.login-with-code]
+verify_jwt = false
+
+[functions.admin-manage-user]
+verify_jwt = true
+
+[functions.media-url]
+verify_jwt = true
+
+[functions.request-access]
+verify_jwt = false

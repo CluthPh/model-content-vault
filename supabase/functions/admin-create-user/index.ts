@@ -1,102 +1,158 @@
-import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { json, preflight } from "../_shared/http.ts";
+import {
+  randomCode,
+  randomPassword,
+  requireAdmin,
+  sha256,
+} from "../_shared/security.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-const CODE_DOMAIN = "yakuza.local";
-
-function normalizeCode(raw: string) {
-  return raw.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-type RoleRow = { role: string };
 type RequestBody = {
   full_name?: unknown;
-  access_code?: unknown;
   is_admin?: unknown;
+  request_id?: unknown;
 };
 
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") return preflight(req);
+  if (req.method !== "POST") return json(req, { error: "método não permitido" }, 405);
 
   try {
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const url = Deno.env.get("SUPABASE_URL")!;
-    const anon = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
-    const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authorization = await requireAdmin(req);
+    if ("error" in authorization) return json(req, { error: authorization.error }, authorization.status);
+    const { adminClient } = authorization;
 
-    const userClient = createClient(url, anon, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !user) return json({ error: "não autenticado" }, 401);
-
-    const admin = createClient(url, service);
-    const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", user.id);
-    const isAdmin = (roles as RoleRow[] | null)?.some((row) => row.role === "admin");
-    if (!isAdmin) return json({ error: "acesso negado" }, 403);
-
-    let body: RequestBody = {};
+    let body: RequestBody;
     try {
       body = await req.json() as RequestBody;
     } catch {
-      return json({ error: "corpo da requisição inválido" }, 400);
+      return json(req, { error: "corpo da requisição inválido" }, 400);
     }
 
-    const full_name = String(body?.full_name ?? "").trim();
-    const access_code = normalizeCode(String(body?.access_code ?? ""));
-    const grantAdmin = !!body?.is_admin;
+    const requestId = String(body.request_id ?? "");
+    let requestClaimed = false;
+    let fullName = String(body.full_name ?? "").trim();
+    let grantAdmin = body.is_admin === true;
+    let contactEmail: string | null = null;
 
-    if (!full_name) return json({ error: "informe o nome do aluno" }, 400);
-    if (access_code.length < 4) {
-      return json({ error: "o código deve ter ao menos 4 caracteres alfanuméricos" }, 400);
+    if (requestId) {
+      if (!/^[0-9a-f-]{36}$/i.test(requestId)) {
+        return json(req, { error: "solicitação inválida" }, 400);
+      }
+      const { data: requestRow, error: requestError } = await adminClient
+        .from("account_requests")
+        .update({
+          status: "processing",
+          reviewed_by: authorization.user.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", requestId)
+        .eq("status", "pending")
+        .select("full_name,email")
+        .maybeSingle();
+      if (requestError || !requestRow) {
+        return json(req, { error: "solicitação já processada ou inexistente" }, 400);
+      }
+      requestClaimed = true;
+      fullName = requestRow.full_name;
+      contactEmail = requestRow.email;
+      const allowlist = (Deno.env.get("ADMIN_EMAIL_ALLOWLIST") ?? "")
+        .split(",")
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean);
+      grantAdmin = allowlist.includes(contactEmail.toLowerCase());
     }
 
-    const { data: exists } = await admin
-      .from("profiles")
-      .select("id")
-      .eq("access_code", access_code)
-      .maybeSingle();
-    if (exists) return json({ error: "este código já está em uso" }, 400);
+    const releaseRequest = async () => {
+      if (!requestClaimed) return;
+      await adminClient.from("account_requests").update({
+        status: "pending",
+        reviewed_by: null,
+        reviewed_at: null,
+      }).eq("id", requestId).eq("status", "processing");
+    };
 
-    const syntheticEmail = `${access_code}@${CODE_DOMAIN}`;
-    const password = access_code;
+    if (!fullName || fullName.length > 120) {
+      await releaseRequest();
+      return json(req, { error: "informe um nome válido" }, 400);
+    }
 
-    const { data: created, error: createErr } = await admin.auth.admin.createUser({
+    let accessCode = "";
+    let accessCodeHash = "";
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      accessCode = randomCode();
+      accessCodeHash = await sha256(accessCode.toLowerCase());
+      const { data: existing } = await adminClient
+        .from("profiles")
+        .select("id")
+        .eq("access_code_hash", accessCodeHash)
+        .maybeSingle();
+      if (!existing) break;
+    }
+    if (!accessCodeHash) return json(req, { error: "não foi possível gerar o código" }, 500);
+
+    const syntheticEmail = `${crypto.randomUUID()}@users.yakuzamentory.online`;
+    const { data: created, error: createError } = await adminClient.auth.admin.createUser({
       email: syntheticEmail,
-      password,
+      contact_email: contactEmail,
+      password: randomPassword(),
       email_confirm: true,
-      user_metadata: { full_name, access_code },
+      user_metadata: { full_name: fullName },
     });
-    if (createErr || !created?.user) {
-      return json({ error: createErr?.message ?? "erro ao criar usuário" }, 400);
+    if (createError || !created.user) {
+      await releaseRequest();
+      return json(req, { error: createError?.message ?? "erro ao criar usuário" }, 400);
     }
 
     const newId = created.user.id;
-    const { error: profileErr } = await admin.from("profiles").upsert(
-      { id: newId, email: syntheticEmail, full_name, access_code },
-      { onConflict: "id" },
-    );
-    if (profileErr) return json({ error: profileErr.message }, 400);
+    const { error: profileError } = await adminClient.from("profiles").upsert({
+      id: newId,
+      email: syntheticEmail,
+      full_name: fullName,
+      access_code: null,
+      access_code_hash: accessCodeHash,
+      access_code_last4: accessCode.slice(-4),
+      access_code_updated_at: new Date().toISOString(),
+      blocked: false,
+    }, { onConflict: "id" });
+
+    if (profileError) {
+      await adminClient.auth.admin.deleteUser(newId);
+      await releaseRequest();
+      return json(req, { error: profileError.message }, 400);
+    }
 
     if (grantAdmin) {
-      await admin.from("user_roles").upsert(
+      const { error: roleError } = await adminClient.from("user_roles").upsert(
         { user_id: newId, role: "admin" },
         { onConflict: "user_id,role" },
       );
+      if (roleError) {
+        await adminClient.auth.admin.deleteUser(newId);
+        await releaseRequest();
+        return json(req, { error: roleError.message }, 400);
+      }
     }
-    return json({ ok: true, id: newId, access_code });
-  } catch (e) {
-    return json({ error: (e as Error).message ?? "erro interno" }, 500);
+
+    if (requestClaimed) {
+      const { error: requestUpdateError } = await adminClient
+        .from("account_requests")
+        .update({
+          status: "approved",
+          created_user_id: newId,
+          reviewed_by: authorization.user.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", requestId)
+        .eq("status", "processing");
+      if (requestUpdateError) {
+        await adminClient.auth.admin.deleteUser(newId);
+        await releaseRequest();
+        return json(req, { error: "não foi possível concluir a aprovação" }, 400);
+      }
+    }
+
+    return json(req, { ok: true, id: newId, access_code: accessCode });
+  } catch (error) {
+    return json(req, { error: error instanceof Error ? error.message : "erro interno" }, 500);
   }
 });

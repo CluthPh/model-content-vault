@@ -7,8 +7,8 @@ type AuthCtx = {
   user: User | null;
   isAdmin: boolean;
   loading: boolean;
-  profile: { full_name: string | null; avatar_url: string | null } | null;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  profile: { full_name: string | null; avatar_url: string | null; blocked: boolean } | null;
+  signIn: (accessCode: string, turnstileToken: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -26,8 +26,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const [{ data: roles }, { data: p }] = await Promise.all([
         supabase.from("user_roles").select("role").eq("user_id", uid),
-        supabase.from("profiles").select("full_name, avatar_url").eq("id", uid).maybeSingle(),
+        supabase.from("profiles").select("full_name, avatar_url, blocked").eq("id", uid).maybeSingle(),
       ]);
+      if (p?.blocked) {
+        await supabase.auth.signOut({ scope: "local" });
+        setIsAdmin(false);
+        setProfile(null);
+        return;
+      }
       setIsAdmin(!!roles?.some((r) => r.role === "admin"));
       setProfile(p ?? null);
     } catch (error) {
@@ -61,9 +67,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+  const signIn = async (accessCode: string, turnstileToken: string) => {
+    const { data, error } = await supabase.functions.invoke("login-with-code", {
+      body: { access_code: accessCode, turnstile_token: turnstileToken },
+    });
+    if (error || !data?.token_hash) {
+      return { error: data?.error ?? error?.message ?? "Código inválido" };
+    }
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      token_hash: data.token_hash,
+      type: "magiclink",
+    });
+    return { error: verifyError?.message ?? null };
   };
   const signOut = async () => {
     await supabase.auth.signOut();

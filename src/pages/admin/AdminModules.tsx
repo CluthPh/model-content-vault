@@ -53,9 +53,16 @@ export default function AdminModules() {
   };
 
   const uploadCover = async (file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 10 MB");
+      return;
+    }
     setUploading(true);
-    const path = `covers/${Date.now()}-${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
-    const { error } = await supabase.storage.from("mentor-media").upload(path, file);
+    const path = `covers/${crypto.randomUUID()}-${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
+    const { error } = await supabase.storage.from("mentor-media").upload(path, file, {
+      contentType: file.type || undefined,
+      upsert: false,
+    });
     if (error) { setUploading(false); return toast.error(error.message); }
     invalidateMediaCache(path);
     setForm((f) => ({ ...f, cover_url: path }));
@@ -70,13 +77,17 @@ export default function AdminModules() {
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
+    let error: { message: string } | null = null;
     if (editing) {
-      const { error } = await supabase.from("modules").update(form).eq("id", editing.id);
-      if (error) return toast.error(error.message);
+      ({ error } = await supabase.from("modules").update(form).eq("id", editing.id));
     } else {
       const order_index = (mods[mods.length - 1]?.order_index ?? 0) + 1;
-      const { error } = await supabase.from("modules").insert({ ...form, order_index });
-      if (error) return toast.error(error.message);
+      ({ error } = await supabase.from("modules").insert({ ...form, order_index }));
+    }
+    if (error) return toast.error(error.message);
+    if (editing?.cover_url && editing.cover_url !== form.cover_url) {
+      await supabase.storage.from("mentor-media").remove([editing.cover_url]);
+      invalidateMediaCache(editing.cover_url);
     }
     toast.success("Salvo");
     setOpen(false);
@@ -85,8 +96,21 @@ export default function AdminModules() {
 
   const remove = async (id: string) => {
     if (!confirm("Excluir módulo e todos os conteúdos?")) return;
+    const module = mods.find((item) => item.id === id);
+    const { data: contentRows } = await supabase
+      .from("module_contents")
+      .select("media_url")
+      .eq("module_id", id);
     const { error } = await supabase.from("modules").delete().eq("id", id);
     if (error) return toast.error(error.message);
+    const paths = [
+      module?.cover_url,
+      ...(contentRows ?? []).map((content) => content.media_url),
+    ].filter((path): path is string => !!path && !/^https?:\/\//i.test(path));
+    if (paths.length) {
+      await supabase.storage.from("mentor-media").remove(paths);
+      paths.forEach((path) => invalidateMediaCache(path));
+    }
     load();
   };
 

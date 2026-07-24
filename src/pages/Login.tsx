@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,15 +7,16 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { Loader2, KeyRound } from "lucide-react";
 import MoneyBackground from "@/components/MoneyBackground";
-
-const CODE_DOMAIN = "yakuza.local";
-const normalize = (raw: string) => raw.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+import { isValidAccessCode, normalizeAccessCode } from "@/lib/access-code";
+import SecurityChallenge from "@/components/SecurityChallenge";
 
 export default function Login() {
   const { signIn, user, loading } = useAuth();
   const nav = useNavigate();
   const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [challengeKey, setChallengeKey] = useState(0);
 
   useEffect(() => {
     if (!loading && user) nav("/app");
@@ -23,27 +24,21 @@ export default function Login() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const raw = code.trim();
-    let email: string;
-    let password: string;
-    if (raw.toLowerCase().startsWith("adm:") && raw.includes("|")) {
-      const rest = raw.slice(4);
-      const idx = rest.indexOf("|");
-      email = rest.slice(0, idx).trim();
-      password = rest.slice(idx + 1);
-    } else {
-      const normalized = normalize(raw);
-      if (normalized.length < 4) {
-        toast.error("Código inválido", { description: "Verifique o código enviado pelo administrador." });
-        return;
-      }
-      email = `${normalized}@${CODE_DOMAIN}`;
-      password = normalized;
+    const normalized = normalizeAccessCode(code);
+    if (!isValidAccessCode(normalized)) {
+      toast.error("Código inválido", { description: "Verifique o código enviado pelo administrador." });
+      return;
+    }
+    if (!token) {
+      toast.error("Conclua a verificação de segurança.");
+      return;
     }
     setSubmitting(true);
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(normalized, token);
     setSubmitting(false);
     if (error) {
+      setToken(null);
+      setChallengeKey((value) => value + 1);
       toast.error("Não foi possível entrar", { description: "Código de acesso inválido." });
     } else {
       toast.success("Bem-vindo à mentoria");
@@ -78,16 +73,23 @@ export default function Login() {
               spellCheck={false}
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="Ex.: YAKUZA2026"
+              placeholder="Digite seu código"
               className="tracking-widest text-center text-lg uppercase"
               required
             />
           </div>
-          <Button type="submit" className="w-full h-12 gradient-primary btn-glow" disabled={submitting}>
+          <SecurityChallenge action="login" resetKey={challengeKey} onToken={setToken} />
+          <Button type="submit" className="w-full h-12 gradient-primary btn-glow" disabled={submitting || !token}>
             {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Entrar
           </Button>
         </form>
+        <p className="text-sm text-muted-foreground text-center mt-5">
+          Ainda não tem acesso?{" "}
+          <Link to="/solicitar-acesso" className="text-primary hover:underline">
+            Solicitar cadastro
+          </Link>
+        </p>
         <p className="text-xs text-muted-foreground text-center mt-8">
           O acesso é exclusivo. Cada aluno recebe um código único da administração.
         </p>
