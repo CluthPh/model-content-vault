@@ -109,9 +109,9 @@ export default function ModuleView() {
           )}
         </div>
 
-        <aside className="card-border rounded-xl p-4 h-fit">
+        <aside className="card-border rounded-xl p-3 md:p-4 h-fit order-1 lg:order-2 lg:sticky lg:top-20">
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3 px-2">Conteúdos</p>
-          <div className="space-y-1">
+          <div className="space-y-1 max-h-64 lg:max-h-[calc(100vh-10rem)] overflow-y-auto">
             {contents.map((c) => {
               const Icon = iconOf(c.type);
               const isActive = active?.id === c.id;
@@ -119,7 +119,7 @@ export default function ModuleView() {
                 <button
                   key={c.id}
                   onClick={() => setActive(c)}
-                  className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                  className={`w-full text-left flex items-center gap-3 px-3 py-2.5 md:py-2 rounded-md text-sm transition-colors ${
                     isActive ? "bg-primary/15 text-foreground border border-primary/40" : "hover:bg-secondary text-muted-foreground"
                   }`}
                 >
