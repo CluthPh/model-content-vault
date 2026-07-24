@@ -52,9 +52,9 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-6">
+    <div className="relative min-h-screen flex items-center justify-center p-4 md:p-6">
       <MoneyBackground />
-      <div className="w-full max-w-md card-border rounded-2xl p-8 animate-fade-in backdrop-blur-sm bg-card/80">
+      <div className="w-full max-w-md card-border rounded-2xl p-6 md:p-8 animate-fade-in backdrop-blur-sm bg-card/80">
         <div className="text-center mb-8">
           <div className="mx-auto mb-4 h-12 w-12 rounded-xl gradient-primary shadow-glow flex items-center justify-center">
             <KeyRound className="h-6 w-6 text-primary-foreground" />
@@ -83,7 +83,7 @@ export default function Login() {
               required
             />
           </div>
-          <Button type="submit" className="w-full gradient-primary btn-glow" disabled={submitting}>
+          <Button type="submit" className="w-full h-12 gradient-primary btn-glow" disabled={submitting}>
             {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Entrar
           </Button>

@@ -70,14 +70,14 @@ export default function ModuleView() {
         <ArrowLeft className="h-4 w-4" /> Voltar aos módulos
       </Link>
       {mod && (
-        <div className="mt-4 mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold">{mod.title}</h1>
-          {mod.description && <p className="text-muted-foreground mt-2 max-w-3xl">{mod.description}</p>}
+        <div className="mt-4 mb-6 md:mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight">{mod.title}</h1>
+          {mod.description && <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-3xl">{mod.description}</p>}
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="card-border rounded-xl p-6 min-h-[400px]">
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="card-border rounded-xl p-4 md:p-6 min-h-[280px] md:min-h-[400px] order-2 lg:order-1">
           {!active ? (
             <p className="text-muted-foreground">Nenhum conteúdo disponível neste módulo.</p>
           ) : (
@@ -109,9 +109,9 @@ export default function ModuleView() {
           )}
         </div>
 
-        <aside className="card-border rounded-xl p-4 h-fit">
+        <aside className="card-border rounded-xl p-3 md:p-4 h-fit order-1 lg:order-2 lg:sticky lg:top-20">
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-3 px-2">Conteúdos</p>
-          <div className="space-y-1">
+          <div className="space-y-1 max-h-64 lg:max-h-[calc(100vh-10rem)] overflow-y-auto">
             {contents.map((c) => {
               const Icon = iconOf(c.type);
               const isActive = active?.id === c.id;
@@ -119,7 +119,7 @@ export default function ModuleView() {
                 <button
                   key={c.id}
                   onClick={() => setActive(c)}
-                  className={`w-full text-left flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+                  className={`w-full text-left flex items-center gap-3 px-3 py-2.5 md:py-2 rounded-md text-sm transition-colors ${
                     isActive ? "bg-primary/15 text-foreground border border-primary/40" : "hover:bg-secondary text-muted-foreground"
                   }`}
                 >

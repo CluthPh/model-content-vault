@@ -33,10 +33,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <MoneyBackground />
       <header className="sticky top-0 z-40 border-b border-border/60 bg-[hsl(var(--carbon))]/90 backdrop-blur-xl">
 
-        <div className="container flex h-16 items-center justify-between">
-          <Link to="/app" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md gradient-primary shadow-glow" />
-            <span className="font-bold tracking-wider text-lg">
+        <div className="container flex h-14 md:h-16 items-center justify-between">
+          <Link to="/app" className="flex items-center gap-2 min-w-0">
+            <div className="h-7 w-7 md:h-8 md:w-8 rounded-md gradient-primary shadow-glow shrink-0" />
+            <span className="font-bold tracking-wider text-base md:text-lg truncate">
               YAKUZA <span className="text-primary">MENTORY</span>
             </span>
           </Link>
@@ -69,7 +69,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <div className="md:hidden flex items-center gap-1">
             <ThemeToggle />
             <button
-              className="p-2 rounded-md hover:bg-secondary"
+              className="p-2 rounded-md hover:bg-secondary active:bg-secondary/70"
               onClick={() => setOpen((v) => !v)}
               aria-label="Menu"
             >
@@ -85,21 +85,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 <Link
                   key={i.label}
                   to={i.to}
-                  className="px-3 py-2 rounded-md text-sm hover:bg-secondary"
+                  className="px-3 py-3 rounded-md text-sm hover:bg-secondary"
                   onClick={() => setOpen(false)}
                 >
                   {i.label}
                 </Link>
               ))}
-              <Button variant="ghost" size="sm" onClick={handleLogout} className="justify-start">
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="justify-start h-11">
                 <LogOut className="h-4 w-4 mr-2" /> Sair
               </Button>
             </div>
           </div>
         )}
       </header>
-      <main className="container py-8">{children}</main>
-      <footer className="border-t border-border/60 mt-16 py-6 text-center text-xs text-muted-foreground">
+      <main className="container py-5 md:py-8">{children}</main>
+      <footer className="border-t border-border/60 mt-10 md:mt-16 py-6 text-center text-xs text-muted-foreground">
         <div className="flex flex-wrap justify-center gap-4">
           <Link to="/termos" className="hover:text-foreground">Termos de uso</Link>
           <Link to="/privacidade" className="hover:text-foreground">Política de privacidade</Link>

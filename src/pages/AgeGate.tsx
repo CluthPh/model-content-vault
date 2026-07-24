@@ -19,9 +19,9 @@ export default function AgeGate() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-6">
+    <div className="relative min-h-screen flex items-center justify-center p-4 md:p-6">
       <MoneyBackground />
-      <div className="max-w-lg w-full card-border rounded-2xl p-8 md:p-10 text-center animate-fade-in backdrop-blur-sm bg-card/80">
+      <div className="max-w-lg w-full card-border rounded-2xl p-6 md:p-10 text-center animate-fade-in backdrop-blur-sm bg-card/80">
         <div className="mx-auto mb-6 h-14 w-14 rounded-xl gradient-primary flex items-center justify-center shadow-glow">
           <Shield className="h-7 w-7 text-primary-foreground" />
         </div>
