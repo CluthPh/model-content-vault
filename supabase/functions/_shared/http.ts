@@ -1,6 +1,7 @@
 const trustedOrigins = new Set([
   "https://yakuzamentory.online",
   "https://www.yakuzamentory.online",
+  "https://yakuza-mentory.vercel.app",
   "http://localhost:5173",
   "http://localhost:8080",
 ]);
