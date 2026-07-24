@@ -43,12 +43,12 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <section className="mb-10">
-        <p className="text-sm text-muted-foreground uppercase tracking-widest">Bem-vindo de volta</p>
-        <h1 className="text-4xl md:text-5xl font-bold mt-2">
+      <section className="mb-8 md:mb-10">
+        <p className="text-xs md:text-sm text-muted-foreground uppercase tracking-widest">Bem-vindo de volta</p>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mt-2 leading-tight">
           {profile?.full_name?.split(" ")[0] ?? "Aluno"}, <span className="text-gradient">continue sua jornada.</span>
         </h1>
-        <p className="text-muted-foreground mt-3 max-w-2xl">
+        <p className="text-sm md:text-base text-muted-foreground mt-3 max-w-2xl">
           Acesse seus módulos exclusivos. O conhecimento aqui compartilhado é restrito e não deve ser divulgado.
         </p>
       </section>
