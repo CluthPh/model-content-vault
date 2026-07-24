@@ -93,10 +93,9 @@ Deno.serve(async (req) => {
     const syntheticEmail = `${crypto.randomUUID()}@users.yakuzamentory.online`;
     const { data: created, error: createError } = await adminClient.auth.admin.createUser({
       email: syntheticEmail,
-      contact_email: contactEmail,
       password: randomPassword(),
       email_confirm: true,
-      user_metadata: { full_name: fullName },
+      user_metadata: { full_name: fullName, contact_email: contactEmail },
     });
     if (createError || !created.user) {
       await releaseRequest();
@@ -107,6 +106,7 @@ Deno.serve(async (req) => {
     const { error: profileError } = await adminClient.from("profiles").upsert({
       id: newId,
       email: syntheticEmail,
+      contact_email: contactEmail,
       full_name: fullName,
       access_code: null,
       access_code_hash: accessCodeHash,
