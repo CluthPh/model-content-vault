@@ -84,7 +84,8 @@ export default function Dashboard() {
                 >
                   <div className="aspect-video bg-secondary relative overflow-hidden">
                     {coverUrls.get(m.id) ? (
-                      <img src={coverUrls.get(m.id) ?? ""} alt={m.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img src={coverUrls.get(m.id) ?? ""} alt={m.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+
                     ) : (
                       <div className="w-full h-full gradient-primary opacity-30" />
                     )}
