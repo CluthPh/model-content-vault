@@ -249,6 +249,9 @@ export type Database = {
       profiles: {
         Row: {
           access_code: string | null
+          access_code_hash: string | null
+          access_code_last4: string | null
+          access_code_updated_at: string | null
           avatar_url: string | null
           blocked: boolean
           created_at: string
@@ -259,6 +262,9 @@ export type Database = {
         }
         Insert: {
           access_code?: string | null
+          access_code_hash?: string | null
+          access_code_last4?: string | null
+          access_code_updated_at?: string | null
           avatar_url?: string | null
           blocked?: boolean
           created_at?: string
@@ -269,6 +275,9 @@ export type Database = {
         }
         Update: {
           access_code?: string | null
+          access_code_hash?: string | null
+          access_code_last4?: string | null
+          access_code_updated_at?: string | null
           avatar_url?: string | null
           blocked?: boolean
           created_at?: string
@@ -305,6 +314,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_access_login_attempt: {
+        Args: { p_key_hash: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -313,6 +326,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_active_user: { Args: { _user_id: string }; Returns: boolean }
       user_has_module_access: {
         Args: { _module_id: string; _user_id: string }
         Returns: boolean

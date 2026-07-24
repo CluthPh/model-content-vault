@@ -63,9 +63,16 @@ export default function AdminModuleContents() {
   };
 
   const upload = async (file: File) => {
+    if (file.size > 250 * 1024 * 1024) {
+      toast.error("O arquivo deve ter no máximo 250 MB");
+      return;
+    }
     setUploading(true);
-    const path = `modules/${id}/${Date.now()}-${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
-    const { error } = await supabase.storage.from("mentor-media").upload(path, file);
+    const path = `modules/${id}/${crypto.randomUUID()}-${file.name.replace(/[^a-z0-9.-]/gi, "_")}`;
+    const { error } = await supabase.storage.from("mentor-media").upload(path, file, {
+      contentType: file.type || undefined,
+      upsert: false,
+    });
     if (error) { setUploading(false); return toast.error(error.message); }
     invalidateMediaCache(path);
     setForm((f) => ({ ...f, media_url: path }));
@@ -81,13 +88,17 @@ export default function AdminModuleContents() {
   const save = async (e: FormEvent) => {
     e.preventDefault();
     const payload = { module_id: id!, title: form.title, body: form.body || null, type: form.type, media_url: form.media_url || null, external_url: form.external_url || null };
+    let error: { message: string } | null = null;
     if (editing) {
-      const { error } = await supabase.from("module_contents").update(payload).eq("id", editing.id);
-      if (error) return toast.error(error.message);
+      ({ error } = await supabase.from("module_contents").update(payload).eq("id", editing.id));
     } else {
       const order_index = (contents[contents.length - 1]?.order_index ?? 0) + 1;
-      const { error } = await supabase.from("module_contents").insert({ ...payload, order_index });
-      if (error) return toast.error(error.message);
+      ({ error } = await supabase.from("module_contents").insert({ ...payload, order_index }));
+    }
+    if (error) return toast.error(error.message);
+    if (editing?.media_url && editing.media_url !== form.media_url) {
+      await supabase.storage.from("mentor-media").remove([editing.media_url]);
+      invalidateMediaCache(editing.media_url);
     }
     toast.success("Salvo");
     setOpen(false);
@@ -96,7 +107,13 @@ export default function AdminModuleContents() {
 
   const remove = async (cid: string) => {
     if (!confirm("Excluir conteúdo?")) return;
-    await supabase.from("module_contents").delete().eq("id", cid);
+    const content = contents.find((item) => item.id === cid);
+    const { error } = await supabase.from("module_contents").delete().eq("id", cid);
+    if (error) return toast.error(error.message);
+    if (content?.media_url && !/^https?:\/\//i.test(content.media_url)) {
+      await supabase.storage.from("mentor-media").remove([content.media_url]);
+      invalidateMediaCache(content.media_url);
+    }
     load();
   };
   const move = async (c: Content, dir: -1 | 1) => {

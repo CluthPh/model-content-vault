@@ -1,8 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const BUCKET = "mentor-media";
-const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1h server-side
-const CACHE_TTL_MS = 50 * 60 * 1000; // renova antes de expirar
+const CACHE_TTL_MS = 4 * 60 * 1000;
 
 type CacheEntry = { url: string; expiresAt: number };
 const cache = new Map<string, CacheEntry>();
@@ -25,12 +23,12 @@ export async function getMediaUrl(pathOrUrl: string | null): Promise<string | nu
   if (pending) return pending;
 
   const promise = (async () => {
-    const { data, error } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUrl(pathOrUrl, SIGNED_URL_TTL_SECONDS);
-    if (error || !data) return null;
-    cache.set(pathOrUrl, { url: data.signedUrl, expiresAt: Date.now() + CACHE_TTL_MS });
-    return data.signedUrl;
+    const { data, error } = await supabase.functions.invoke("media-url", {
+      body: { path: pathOrUrl },
+    });
+    if (error || !data?.url) return null;
+    cache.set(pathOrUrl, { url: data.url, expiresAt: Date.now() + CACHE_TTL_MS });
+    return data.url as string;
   })().finally(() => {
     inflight.delete(pathOrUrl);
   });

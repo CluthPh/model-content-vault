@@ -7,9 +7,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { Loader2, KeyRound } from "lucide-react";
 import MoneyBackground from "@/components/MoneyBackground";
-
-const CODE_DOMAIN = "yakuza.local";
-const normalize = (raw: string) => raw.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+import { isValidAccessCode, normalizeAccessCode } from "@/lib/access-code";
 
 export default function Login() {
   const { signIn, user, loading } = useAuth();
@@ -23,25 +21,13 @@ export default function Login() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const raw = code.trim();
-    let email: string;
-    let password: string;
-    if (raw.toLowerCase().startsWith("adm:") && raw.includes("|")) {
-      const rest = raw.slice(4);
-      const idx = rest.indexOf("|");
-      email = rest.slice(0, idx).trim();
-      password = rest.slice(idx + 1);
-    } else {
-      const normalized = normalize(raw);
-      if (normalized.length < 4) {
-        toast.error("Código inválido", { description: "Verifique o código enviado pelo administrador." });
-        return;
-      }
-      email = `${normalized}@${CODE_DOMAIN}`;
-      password = normalized;
+    const normalized = normalizeAccessCode(code);
+    if (!isValidAccessCode(normalized)) {
+      toast.error("Código inválido", { description: "Verifique o código enviado pelo administrador." });
+      return;
     }
     setSubmitting(true);
-    const { error } = await signIn(email, password);
+    const { error } = await signIn(normalized);
     setSubmitting(false);
     if (error) {
       toast.error("Não foi possível entrar", { description: "Código de acesso inválido." });
@@ -78,7 +64,7 @@ export default function Login() {
               spellCheck={false}
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="Ex.: YAKUZA2026"
+              placeholder="Digite seu código"
               className="tracking-widest text-center text-lg uppercase"
               required
             />
